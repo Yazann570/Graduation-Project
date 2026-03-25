@@ -63,7 +63,7 @@ th, td {
     align-items: center;
     padding: 0 24px;
     height: 90px;
-    background: linear-gradient(135deg, #002C40 0%, #09618a 40%, #0a8abf 70%, #1aa3cc 100%);
+    background-color: white;
 }
 
 #header-logo-area {

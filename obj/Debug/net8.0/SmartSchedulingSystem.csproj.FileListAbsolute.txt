@@ -130,3 +130,4 @@ C:\Users\HP\Documents\gp2\SmartSchedulingSystem\obj\Debug\net8.0\refint\SmartSch
 C:\Users\HP\Documents\gp2\SmartSchedulingSystem\obj\Debug\net8.0\SmartSchedulingSystem.pdb
 C:\Users\HP\Documents\gp2\SmartSchedulingSystem\obj\Debug\net8.0\SmartSchedulingSystem.genruntimeconfig.cache
 C:\Users\HP\Documents\gp2\SmartSchedulingSystem\obj\Debug\net8.0\ref\SmartSchedulingSystem.dll
+C:\Users\HP\Documents\gp2\SmartSchedulingSystem\obj\Debug\net8.0\SmartSchedulingSystem.sourcelink.json
