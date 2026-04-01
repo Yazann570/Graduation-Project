@@ -12,6 +12,9 @@ namespace SmartSchedulingSystem.Services
         Task<List<FavouriteDto>> GetFavouritesAsync(string studentId, int filterId);
         Task<bool> ToggleFavouriteAsync(ToggleFavouriteRequest req, string studentId);
         Task<List<FilterDto>> GetAllFiltersAsync(string studentId);
+        Task<List<SelectedCourseDto>> GetSelectedCoursesAsync(string studentId);
+        Task AddCourseAsync(string studentId, AddCourseRequest req);
+        Task RemoveCourseAsync(string studentId, string courseId);
     }
 
     public class SchedulerService : ISchedulerService
@@ -54,17 +57,47 @@ namespace SmartSchedulingSystem.Services
             }
         }
 
+        // ── Helper: execute raw SQL via direct ADO.NET (bypasses EF Core transaction) ──
+        private async Task ExecSql(string sql, params object[] parameters)
+        {
+            var conn = _db.Database.GetDbConnection();
+            bool weOpenedIt = conn.State == System.Data.ConnectionState.Closed;
+            if (weOpenedIt) await conn.OpenAsync();
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = sql;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    var p = cmd.CreateParameter();
+                    p.ParameterName = "p" + i;
+                    p.Value = parameters[i];
+                    cmd.Parameters.Add(p);
+                }
+                // Replace {0},{1},... with :p0,:p1,... (Oracle named params)
+                for (int i = parameters.Length - 1; i >= 0; i--)
+                    cmd.CommandText = cmd.CommandText.Replace("{" + i + "}", ":p" + i);
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+            finally
+            {
+                if (weOpenedIt) await conn.CloseAsync();
+            }
+        }
+
         // ── 1. Remaining courses ─────────────────────────────
+        // Returns all courses the student has NOT yet added to their selected list
         public async Task<List<RemainingCourseDto>> GetRemainingCoursesAsync(string studentId)
         {
-            var doneIds = await _db.StudentCourses
+            var selectedIds = await _db.StudentCourses
                 .Where(sc => sc.StId == studentId)
                 .Select(sc => sc.CId)
                 .ToListAsync();
 
             var courses = await _db.Courses
                 .Include(c => c.Sections).ThenInclude(s => s.Instructor)
-                .Where(c => !doneIds.Contains(c.CId))
+                .Where(c => !selectedIds.Contains(c.CId))
                 .ToListAsync();
 
             return courses.Select(c => new RemainingCourseDto
@@ -278,7 +311,87 @@ namespace SmartSchedulingSystem.Services
             return true;
         }
 
-        // ── 6. Get all filters (debug) ───────────────────
+        // ── 6. Get selected courses ──────────────────────
+        public async Task<List<SelectedCourseDto>> GetSelectedCoursesAsync(string studentId)
+        {
+            // Load all courses in STUDENT_COURSE for this student
+            var selectedIds = await _db.StudentCourses
+                .Where(sc => sc.StId == studentId)
+                .Select(sc => sc.CId)
+                .ToListAsync();
+
+            if (selectedIds.Count == 0) return new List<SelectedCourseDto>();
+
+            // Load course details with all available sections/instructors
+            var courses = await _db.Courses
+                .Include(c => c.Sections).ThenInclude(s => s.Instructor)
+                .Where(c => selectedIds.Contains(c.CId))
+                .ToListAsync();
+
+            // Load which instructors this student has chosen per course
+            var prefs = await _db.InstructorsAdded
+                .Include(ia => ia.Instructor)
+                .Where(ia => ia.StId == studentId && selectedIds.Contains(ia.CId))
+                .ToListAsync();
+
+            var prefsByCourse = prefs
+                .GroupBy(ia => ia.CId)
+                .ToDictionary(g => g.Key, g => g.Select(ia => new InstructorSummaryDto
+                { IId = ia.IId, IName = ia.Instructor.IName }).ToList());
+
+            return courses.Select(c => new SelectedCourseDto
+            {
+                CId = c.CId,
+                CName = c.CName,
+                CHrs = c.CHrs,
+                CType = c.CType,
+                RequirementLabel = RequirementLabels.GetValueOrDefault(c.CType, c.CType),
+                IsOnline = c.IsOnline,
+                SelectedInstructors = prefsByCourse.GetValueOrDefault(c.CId, new()),
+                AvailableInstructors = c.Sections
+                    .Select(s => s.Instructor)
+                    .DistinctBy(i => i.IId)
+                    .Select(i => new InstructorSummaryDto { IId = i.IId, IName = i.IName })
+                    .ToList(),
+            }).ToList();
+        }
+
+        // ── 7. Add course ─────────────────────────────────────
+        public async Task AddCourseAsync(string studentId, AddCourseRequest req)
+        {
+            // Use direct ADO.NET — ExecuteSqlRawAsync doesn't auto-commit in Oracle
+            bool exists = await _db.StudentCourses
+                .AnyAsync(sc => sc.StId == studentId && sc.CId == req.CourseId);
+
+            if (!exists)
+                await ExecSql(
+                    "INSERT INTO STUDENT_COURSE (ST_ID, C_ID) VALUES ({0}, {1})",
+                    studentId, req.CourseId);
+
+            // Replace instructor preferences for this course
+            await ExecSql(
+                "DELETE FROM INSTRUCTOR_ADDED WHERE ST_ID = {0} AND C_ID = {1}",
+                studentId, req.CourseId);
+
+            foreach (var iId in req.InstructorIds)
+                await ExecSql(
+                    "INSERT INTO INSTRUCTOR_ADDED (I_ID, C_ID, ST_ID) VALUES ({0}, {1}, {2})",
+                    iId, req.CourseId, studentId);
+        }
+
+        // ── 8. Remove course ──────────────────────────────────
+        public async Task RemoveCourseAsync(string studentId, string courseId)
+        {
+            await ExecSql(
+                "DELETE FROM INSTRUCTOR_ADDED WHERE ST_ID = {0} AND C_ID = {1}",
+                studentId, courseId);
+
+            await ExecSql(
+                "DELETE FROM STUDENT_COURSE WHERE ST_ID = {0} AND C_ID = {1}",
+                studentId, courseId);
+        }
+
+        // ── 9. Get all filters (debug) ───────────────────────
         public async Task<List<FilterDto>> GetAllFiltersAsync(string studentId)
         {
             var filters = await _db.Filters

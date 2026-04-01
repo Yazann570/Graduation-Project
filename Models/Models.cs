@@ -313,4 +313,22 @@ namespace SmartSchedulingSystem.Models
     {
         public bool Added { get; set; }
     }
+
+    public class SelectedCourseDto
+    {
+        public string CId { get; set; } = null!;
+        public string CName { get; set; } = null!;
+        public int CHrs { get; set; }
+        public string CType { get; set; } = null!;
+        public string RequirementLabel { get; set; } = null!;
+        public string IsOnline { get; set; } = "N";
+        public List<InstructorSummaryDto> SelectedInstructors { get; set; } = new();
+        public List<InstructorSummaryDto> AvailableInstructors { get; set; } = new();
+    }
+
+    public class AddCourseRequest
+    {
+        [Required] public string CourseId { get; set; } = null!;
+        [Required] public List<int> InstructorIds { get; set; } = new();
+    }
 }

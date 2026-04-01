@@ -64,6 +64,43 @@ async function apiGetRemainingCourses() {
     }));
 }
 
+// GET /api/courses/selected — returns persisted selected courses + their instructors
+async function apiGetSelectedCourses() {
+    const courses = await apiFetch('/courses/selected');
+    if (!courses) return [];
+
+    const typeMap = {
+        CP: 'compulsory-program', CS: 'compulsory-school',
+        CU: 'compulsory-university', EU: 'elective-university', EP: 'elective-program',
+    };
+
+    return courses.map(c => ({
+        id: c.CId,
+        courseNumber: c.CId,
+        name: c.CName,
+        hours: c.CHrs,
+        requirementType: typeMap[c.CType] || c.CType,
+        // instructors = names of already-chosen instructors (for the selected table dropdown)
+        instructors: c.SelectedInstructors.map(i => i.IName),
+        availableInstructors: c.AvailableInstructors.map(i => i.IName),
+        _instructorObjects: c.AvailableInstructors,
+        _selectedObjects: c.SelectedInstructors,
+    }));
+}
+
+// POST /api/courses/selected — persist a newly added course
+async function apiAddCourse(courseId, instructorIds) {
+    return apiFetch('/courses/selected', {
+        method: 'POST',
+        body: JSON.stringify({ CourseId: courseId, InstructorIds: instructorIds }),
+    });
+}
+
+// DELETE /api/courses/selected/{courseId} — remove a course
+async function apiRemoveCourse(courseId) {
+    return apiFetch('/courses/selected/' + courseId, { method: 'DELETE' });
+}
+
 async function apiSaveFilter({ startTime, endTime, minBreak, maxBreak, days, courseInstructors }) {
     return apiFetch('/filter', {
         method: 'POST',
@@ -179,14 +216,33 @@ function hideLoading() {
 // ============================================================
 async function init() {
     showLoading('Loading courses…');
+
+    // Step 1: Load selected courses from STUDENT_COURSE + INSTRUCTOR_ADDED
+    try {
+        const selected = await apiGetSelectedCourses();
+        console.log('Selected courses from DB:', selected);
+        state.selectedCourses = selected;
+        for (const course of selected) {
+            if (course._selectedObjects && course._selectedObjects.length > 0)
+                state.selectedInstructors[course.id] = course._selectedObjects.map(i => i.IName);
+        }
+    } catch (e) {
+        console.error('Could not load selected courses:', e);
+        state.selectedCourses = [];
+    }
+
+    // Step 2: Load remaining courses (excludes already-selected)
     try {
         REMAINING_COURSES = await apiGetRemainingCourses();
+        console.log('Remaining courses loaded:', REMAINING_COURSES.length);
     } catch (e) {
         console.error('Could not load remaining courses:', e);
         REMAINING_COURSES = [];
     }
+
     hideLoading();
     render();
+    console.log('Page rendered. Test: window.handleAddCourse =', typeof handleAddCourse);
 }
 
 // ============================================================
@@ -748,19 +804,57 @@ function toggleInstructor(courseId, instructor) {
     }
 }
 
-function handleAddCourse(courseId) {
+async function handleAddCourse(courseId) {
+    console.log('handleAddCourse called with:', courseId);
+    console.log('REMAINING_COURSES:', REMAINING_COURSES.map(c => c.id));
+    console.log('selectedInstructors:', state.selectedInstructors);
+
     const course = REMAINING_COURSES.find(c => c.id === courseId);
-    if (!course) return;
-    const instructors = state.selectedInstructors[courseId] || [];
-    if (instructors.length === 0) { alert('Please select at least one instructor first'); return; }
+    if (!course) { console.log('Course not found in REMAINING_COURSES'); return; }
+
+    const selectedNames = state.selectedInstructors[courseId] || [];
+    if (selectedNames.length === 0) { alert('Please select at least one instructor first'); return; }
     if (state.selectedCourses.find(c => c.id === courseId)) { alert('Course already added'); return; }
-    state.selectedCourses = [...state.selectedCourses, { ...course, instructors }];
+
+    // Get instructor IDs for the selected names
+    const instrIds = (course._instructorObjects || [])
+        .filter(obj => selectedNames.includes(obj.IName))
+        .map(obj => obj.IId);
+
+    console.log('Adding course:', courseId, 'with instructor IDs:', instrIds);
+
+    try {
+        await apiAddCourse(courseId, instrIds);
+        console.log('Course saved to DB successfully');
+        // Verify by re-fetching from DB
+        const verify = await apiGetSelectedCourses();
+        console.log('DB selected courses after add:', verify);
+    } catch (e) {
+        alert('Could not save course: ' + e.message);
+        return;
+    }
+
+    // Update local state and refresh remaining courses
+    state.selectedCourses = [...state.selectedCourses, { ...course, instructors: selectedNames }];
+    REMAINING_COURSES = REMAINING_COURSES.filter(c => c.id !== courseId);
     state.openDropdown = null;
     render();
 }
 
-function handleRemoveCourse(courseId) {
+async function handleRemoveCourse(courseId) {
+    try {
+        await apiRemoveCourse(courseId);
+    } catch (e) {
+        alert('Could not remove course: ' + e.message);
+        return;
+    }
+
+    // Move course back to remaining list
+    const course = state.selectedCourses.find(c => c.id === courseId);
+    if (course) REMAINING_COURSES = [...REMAINING_COURSES, course];
+
     state.selectedCourses = state.selectedCourses.filter(c => c.id !== courseId);
+    delete state.selectedInstructors[courseId];
     render();
 }
 
