@@ -143,6 +143,36 @@ async function apiGenerateSchedules(filterId) {
     }));
 }
 
+// ── Map favourite DTO from API shape to render shape ──────────
+function mapFavouriteDto(f) {
+    const typeMap = {
+        CP: 'compulsory-program', CS: 'compulsory-school',
+        CU: 'compulsory-university', EU: 'elective-university', EP: 'elective-program',
+    };
+    return {
+        favId: f.FavId,
+        id: String(f.SchedId),
+        totalHours: f.Schedule.TotalHours,
+        isFav: true,
+        courses: (f.Schedule.Courses || []).map(c => ({
+            courseNumber: c.CourseNumber,
+            name: c.CourseName,
+            requirementType: typeMap[c.CType] || c.CType,
+            section: c.SectionNum,
+            instructor: c.InstructorName,
+            day: c.Days || '—',
+            time: c.StartTime + '–' + c.EndTime,
+        })),
+    };
+}
+
+// GET /api/favourite/all — all favourites across all filters
+async function apiGetAllFavourites() {
+    const favs = await apiFetch('/favourite/all');
+    if (!favs) return [];
+    return favs.map(f => mapFavouriteDto(f));
+}
+
 async function apiGetFavourites(filterId) {
     return apiFetch('/favourite?filterId=' + filterId);
 }
@@ -188,6 +218,7 @@ let state = {
     generatedSchedules: [],
     currentScheduleIndex: 0,
     favoriteIds: [],
+    persistedFavourites: [],  // loaded from DB on init, shown always
     noSchedulesFound: false,
     isLoading: false,
 };
@@ -215,6 +246,18 @@ function hideLoading() {
 //  INIT  (replaces bare render() call at the end)
 // ============================================================
 async function init() {
+    // Check session — redirect to login if not logged in
+    try {
+        const authRes = await fetch('/api/auth/me');
+        const authJson = await authRes.json();
+        if (!authJson.Success) { window.location.href = '/login.html'; return; }
+        // Show student ID in page if desired
+        console.log('Logged in as:', authJson.Data.StId);
+    } catch (e) {
+        window.location.href = '/login.html';
+        return;
+    }
+
     showLoading('Loading courses…');
 
     // Step 1: Load selected courses from STUDENT_COURSE + INSTRUCTOR_ADDED
@@ -238,6 +281,16 @@ async function init() {
     } catch (e) {
         console.error('Could not load remaining courses:', e);
         REMAINING_COURSES = [];
+    }
+
+    // Step 3: Load all persisted favourites from DB
+    try {
+        const allFavs = await apiGetAllFavourites();
+        state.persistedFavourites = allFavs;
+        console.log('Persisted favourites loaded:', allFavs.length);
+    } catch (e) {
+        console.error('Could not load favourites:', e);
+        state.persistedFavourites = [];
     }
 
     hideLoading();
@@ -502,9 +555,8 @@ function renderSmartScheduler() {
     <!-- Generated Schedules -->
     ${state.generatedSchedules.length > 0 ? renderGeneratedSchedules() : ''}
 
-    <!-- Favorite Schedules -->
-    ${state.generatedSchedules.filter(s => state.favoriteIds.includes(s.id)).length > 0
-            ? renderFavoriteSchedules() : ''}
+    <!-- Favorite Schedules (always shown if any exist) -->
+    ${renderFavoriteSchedules()}
 
     <!-- No Schedules Found -->
     ${state.noSchedulesFound ? `
@@ -598,12 +650,23 @@ function renderGeneratedSchedules() {
 }
 
 // ── Favorite Schedules ───────────────────────────────────────
+// Shows ALL persisted favourites from DB, always visible on the page
 function renderFavoriteSchedules() {
-    const favSchedules = state.generatedSchedules.filter(s => state.favoriteIds.includes(s.id));
+    // Merge persisted favs with any newly favourited in this session
+    const allFavs = [...state.persistedFavourites];
+
+    // Add current-session generated schedules that are starred but not yet in persisted list
+    const persistedIds = new Set(allFavs.map(f => f.id));
+    state.generatedSchedules
+        .filter(s => state.favoriteIds.includes(s.id) && !persistedIds.has(s.id))
+        .forEach(s => allFavs.push(s));
+
+    if (allFavs.length === 0) return '';
+
     return `
     <div class="section-mb">
       <h2 class="section-title">Favorite Schedules</h2>
-      ${favSchedules.map((schedule, si) => `
+      ${allFavs.map((schedule, si) => `
         <div class="fav-card">
           <div class="fav-card-header">
             <div class="fav-card-title">
@@ -622,7 +685,7 @@ function renderFavoriteSchedules() {
                 </svg>
                 Export to PDF
               </button>
-              <button class="btn-remove-link" onclick="toggleFavorite('${schedule.id}')">Remove</button>
+              <button class="btn-remove-link" onclick="removeFavourite('${schedule.id}')">Remove</button>
             </div>
           </div>
           <div class="table-wrapper">
@@ -641,7 +704,7 @@ function renderFavoriteSchedules() {
                     <td>${(REQUIREMENT_TYPES[c.requirementType] || { label: c.requirementType }).label}</td>
                     <td>${c.section}</td>
                     <td>${c.instructor}</td>
-                    <td>${c.day}</td>
+                    <td>${c.day || '—'}</td>
                     <td>${c.time}</td>
                   </tr>
                 `).join('')}
@@ -1001,10 +1064,11 @@ async function generateSchedules() {
             state.currentScheduleIndex = 0;
             state.noSchedulesFound = false;
 
-            // Restore starred schedules from server
+            // Reload all persisted favourites after generate
             try {
-                const favs = await apiGetFavourites(filter.FId);
-                state.favoriteIds = (favs || []).map(f => String(f.SchedId));
+                const allFavs = await apiGetAllFavourites();
+                state.persistedFavourites = allFavs;
+                state.favoriteIds = allFavs.map(f => f.id);
             } catch (_) { /* non-critical */ }
         }
     } catch (e) {
@@ -1012,6 +1076,26 @@ async function generateSchedules() {
     }
 
     hideLoading();
+    render();
+}
+
+// ============================================================
+//  REMOVE FAVOURITE from persisted list (called from fav card Remove button)
+// ============================================================
+async function removeFavourite(scheduleId) {
+    if (!state.currentFilterId) {
+        // Try to find filterId from persistedFavourites — need to look it up
+        alert('Cannot remove: no active filter. Please generate schedules first.');
+        return;
+    }
+    try {
+        const result = await apiToggleFavourite(state.currentFilterId, scheduleId);
+        // Remove from persistedFavourites
+        state.persistedFavourites = state.persistedFavourites.filter(f => f.id !== scheduleId);
+        state.favoriteIds = state.favoriteIds.filter(id => id !== scheduleId);
+    } catch (e) {
+        alert('Could not remove favourite: ' + e.message);
+    }
     render();
 }
 
@@ -1034,14 +1118,27 @@ async function toggleFavorite(scheduleId) {
         const result = await apiToggleFavourite(state.currentFilterId, scheduleId);
         if (result && result.Added) {
             state.favoriteIds = [...state.favoriteIds, scheduleId];
+            // Add to persistedFavourites so it shows immediately
+            const sched = state.generatedSchedules.find(s => s.id === scheduleId);
+            if (sched && !state.persistedFavourites.find(f => f.id === scheduleId))
+                state.persistedFavourites = [...state.persistedFavourites, sched];
         } else {
             state.favoriteIds = state.favoriteIds.filter(id => id !== scheduleId);
+            state.persistedFavourites = state.persistedFavourites.filter(f => f.id !== scheduleId);
         }
     } catch (e) {
         alert('Could not update favourites: ' + e.message);
     }
 
     render();
+}
+
+// ============================================================
+//  LOGOUT
+// ============================================================
+async function logout() {
+    await fetch('/api/auth/logout', { method: 'POST' });
+    window.location.href = '/login.html';
 }
 
 // ============================================================

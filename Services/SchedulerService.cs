@@ -10,6 +10,7 @@ namespace SmartSchedulingSystem.Services
         Task<FilterDto> SaveFilterAsync(string studentId, CreateFilterRequest req);
         Task<List<ScheduleResultDto>> GenerateSchedulesAsync(int filterId, string studentId);
         Task<List<FavouriteDto>> GetFavouritesAsync(string studentId, int filterId);
+        Task<List<FavouriteDto>> GetAllFavouritesAsync(string studentId);
         Task<bool> ToggleFavouriteAsync(ToggleFavouriteRequest req, string studentId);
         Task<List<FilterDto>> GetAllFiltersAsync(string studentId);
         Task<List<SelectedCourseDto>> GetSelectedCoursesAsync(string studentId);
@@ -271,6 +272,35 @@ namespace SmartSchedulingSystem.Services
                 .Include(f => f.GeneratedSchedule)
                     .ThenInclude(g => g.GeneratedSections).ThenInclude(gs => gs.Course)
                 .Where(f => f.FId == filterId && f.Filter.StId == studentId)
+                .AsSplitQuery()
+                .ToListAsync();
+
+            return favs.Select(f =>
+            {
+                var sections = f.GeneratedSchedule.GeneratedSections.Select(gs => gs.Section).ToList();
+                return new FavouriteDto
+                {
+                    FavId = f.FavId,
+                    SchedId = f.SchedId,
+                    Schedule = MapSchedule(f.GeneratedSchedule, sections, isFav: true),
+                };
+            }).ToList();
+        }
+
+        // ── 4b. Get ALL favourites across all filters ────────
+        public async Task<List<FavouriteDto>> GetAllFavouritesAsync(string studentId)
+        {
+            var favs = await _db.Favourites
+                .Include(f => f.Filter)
+                .Include(f => f.GeneratedSchedule)
+                    .ThenInclude(g => g.GeneratedSections)
+                        .ThenInclude(gs => gs.Section).ThenInclude(s => s.Instructor)
+                .Include(f => f.GeneratedSchedule)
+                    .ThenInclude(g => g.GeneratedSections)
+                        .ThenInclude(gs => gs.Section).ThenInclude(s => s.DayGroupSections)
+                .Include(f => f.GeneratedSchedule)
+                    .ThenInclude(g => g.GeneratedSections).ThenInclude(gs => gs.Course)
+                .Where(f => f.Filter.StId == studentId)
                 .AsSplitQuery()
                 .ToListAsync();
 

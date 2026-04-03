@@ -314,6 +314,11 @@ namespace SmartSchedulingSystem.Models
         public bool Added { get; set; }
     }
 
+    public class LoginRequest
+    {
+        [Required] public string StudentId { get; set; } = null!;
+    }
+
     public class SelectedCourseDto
     {
         public string CId { get; set; } = null!;

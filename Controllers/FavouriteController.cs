@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using SmartSchedulingSystem.Models;
 using SmartSchedulingSystem.Services;
 
@@ -7,22 +6,30 @@ namespace SmartSchedulingSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class FavouriteController : ControllerBase
+    public class FavouriteController : BaseController
     {
         private readonly ISchedulerService _svc;
-        private readonly string _studentId;
+        public FavouriteController(ISchedulerService svc) => _svc = svc;
 
-        public FavouriteController(ISchedulerService svc, IConfiguration config)
+        // GET /api/favourite/all  — all favourites for the student across all filters
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll()
         {
-            _svc = svc;
-            _studentId = config["AppSettings:StudentId"]!;
+            var auth = RequireLogin(out var studentId);
+            if (auth != null) return auth;
+
+            var favs = await _svc.GetAllFavouritesAsync(studentId);
+            return Ok(ApiResponse<List<FavouriteDto>>.Ok(favs));
         }
 
-        // GET /api/favourite?filterId=3
+        // GET /api/favourite?filterId=3  — favourites for a specific filter
         [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int filterId)
+        public async Task<IActionResult> GetByFilter([FromQuery] int filterId)
         {
-            var favs = await _svc.GetFavouritesAsync(_studentId, filterId);
+            var auth = RequireLogin(out var studentId);
+            if (auth != null) return auth;
+
+            var favs = await _svc.GetFavouritesAsync(studentId, filterId);
             return Ok(ApiResponse<List<FavouriteDto>>.Ok(favs));
         }
 
@@ -30,19 +37,18 @@ namespace SmartSchedulingSystem.Controllers
         [HttpPost("toggle")]
         public async Task<IActionResult> Toggle([FromBody] ToggleFavouriteRequest req)
         {
+            var auth = RequireLogin(out var studentId);
+            if (auth != null) return auth;
+
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<ToggleResultDto>.Fail("Invalid request."));
 
             try
             {
-                bool added = await _svc.ToggleFavouriteAsync(req, _studentId);
+                bool added = await _svc.ToggleFavouriteAsync(req, studentId);
                 return Ok(ApiResponse<ToggleResultDto>.Ok(
                     new ToggleResultDto { Added = added },
                     added ? "Added to favourites." : "Removed from favourites."));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(ApiResponse<ToggleResultDto>.Fail(ex.Message));
             }
             catch (Exception ex)
             {

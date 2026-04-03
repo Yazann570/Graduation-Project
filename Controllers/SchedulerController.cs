@@ -6,34 +6,31 @@ namespace SmartSchedulingSystem.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SchedulerController : ControllerBase
+    public class SchedulerController : BaseController
     {
         private readonly ISchedulerService _svc;
-        private readonly string _studentId;
         private readonly ILogger<SchedulerController> _logger;
 
-        public SchedulerController(ISchedulerService svc, IConfiguration config,
-            ILogger<SchedulerController> logger)
+        public SchedulerController(ISchedulerService svc, ILogger<SchedulerController> logger)
         {
             _svc = svc;
-            _studentId = config["AppSettings:StudentId"]!;
             _logger = logger;
         }
 
-        // POST /api/scheduler/generate
         [HttpPost("generate")]
         public async Task<IActionResult> Generate([FromBody] GenerateSchedulesRequest req)
         {
+            var auth = RequireLogin(out var studentId);
+            if (auth != null) return auth;
+
             if (!ModelState.IsValid)
                 return BadRequest(ApiResponse<List<ScheduleResultDto>>.Fail("Invalid request."));
 
-            // Log to terminal so we can see exactly what values are used
-            _logger.LogInformation("Generate called — FilterId: {FilterId}, StudentId: {StudentId}",
-                req.FilterId, _studentId);
+            _logger.LogInformation("Generate — FilterId: {F}, Student: {S}", req.FilterId, studentId);
 
             try
             {
-                var schedules = await _svc.GenerateSchedulesAsync(req.FilterId, _studentId);
+                var schedules = await _svc.GenerateSchedulesAsync(req.FilterId, studentId);
                 var msg = schedules.Count == 0
                     ? "No conflict-free schedules found. Try relaxing your filters."
                     : $"{schedules.Count} schedule(s) generated.";
@@ -41,19 +38,12 @@ namespace SmartSchedulingSystem.Controllers
             }
             catch (Exception ex)
             {
-                // Walk the full exception chain and log every level
-                var messages = new List<string>();
-                var current = ex;
-                while (current != null)
-                {
-                    messages.Add(current.GetType().Name + ": " + current.Message);
-                    _logger.LogError("  Exception level: {Msg}", current.Message);
-                    current = current.InnerException;
-                }
-                var fullMessage = string.Join(" --> ", messages);
-                _logger.LogError("Full error: {FullMessage}", fullMessage);
-
-                return StatusCode(500, ApiResponse<List<ScheduleResultDto>>.Fail(fullMessage));
+                var msgs = new List<string>();
+                var cur = ex;
+                while (cur != null) { msgs.Add(cur.GetType().Name + ": " + cur.Message); cur = cur.InnerException; }
+                var full = string.Join(" --> ", msgs);
+                _logger.LogError("Generate failed: {E}", full);
+                return StatusCode(500, ApiResponse<List<ScheduleResultDto>>.Fail(full));
             }
         }
     }
