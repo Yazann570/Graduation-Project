@@ -150,7 +150,7 @@ function mapFavouriteDto(f) {
         CU: 'compulsory-university', EU: 'elective-university', EP: 'elective-program',
     };
     return {
-        favId: f.FavId,
+        favId: f.FavId,          // FAV_ID from DB — used for direct DELETE
         id: String(f.SchedId),
         totalHours: f.Schedule.TotalHours,
         isFav: true,
@@ -164,6 +164,11 @@ function mapFavouriteDto(f) {
             time: c.StartTime + '–' + c.EndTime,
         })),
     };
+}
+
+// DELETE /api/favourite/{favId} — remove a specific favourite by its DB id
+async function apiRemoveFavourite(favId) {
+    return apiFetch('/favourite/' + favId, { method: 'DELETE' });
 }
 
 // GET /api/favourite/all — all favourites across all filters
@@ -685,7 +690,7 @@ function renderFavoriteSchedules() {
                 </svg>
                 Export to PDF
               </button>
-              <button class="btn-remove-link" onclick="removeFavourite('${schedule.id}')">Remove</button>
+              <button class="btn-remove-link" onclick="removeFavourite(${schedule.favId})">Remove</button>
             </div>
           </div>
           <div class="table-wrapper">
@@ -1082,20 +1087,33 @@ async function generateSchedules() {
 // ============================================================
 //  REMOVE FAVOURITE from persisted list (called from fav card Remove button)
 // ============================================================
-async function removeFavourite(scheduleId) {
-    if (!state.currentFilterId) {
-        // Try to find filterId from persistedFavourites — need to look it up
-        alert('Cannot remove: no active filter. Please generate schedules first.');
+async function removeFavourite(favId) {
+    // favId is the FAV_ID primary key from DB — passed directly from the Remove button
+    console.log('removeFavourite called with favId:', favId, typeof favId);
+
+    if (!favId) {
+        alert('Cannot remove: invalid favourite ID.');
         return;
     }
+
     try {
-        const result = await apiToggleFavourite(state.currentFilterId, scheduleId);
-        // Remove from persistedFavourites
-        state.persistedFavourites = state.persistedFavourites.filter(f => f.id !== scheduleId);
-        state.favoriteIds = state.favoriteIds.filter(id => id !== scheduleId);
+        await apiRemoveFavourite(favId);  // DELETE /api/favourite/{favId}
     } catch (e) {
         alert('Could not remove favourite: ' + e.message);
+        return;
     }
+
+    // Reload all favourites from DB to ensure accurate state
+    try {
+        const allFavs = await apiGetAllFavourites();
+        state.persistedFavourites = allFavs;
+        state.favoriteIds = allFavs.map(f => f.id);
+    } catch (e) {
+        // Fallback: remove locally by favId
+        state.persistedFavourites = state.persistedFavourites.filter(f => f.favId !== favId);
+        state.favoriteIds = state.persistedFavourites.map(f => f.id);
+    }
+
     render();
 }
 
@@ -1103,28 +1121,27 @@ async function removeFavourite(scheduleId) {
 //  TOGGLE FAVOURITE  (async — calls the real API)
 // ============================================================
 async function toggleFavorite(scheduleId) {
+    // If already a persisted favourite, remove it using its FAV_ID (not toggle)
+    // Toggling with a different filterId would INSERT a new row instead of deleting the old one
+    const existingFav = state.persistedFavourites.find(f => f.id === String(scheduleId));
+    if (existingFav) {
+        await removeFavourite(existingFav.favId);
+        return;
+    }
+
+    // Not yet a favourite — add it using current filter
     if (!state.currentFilterId) {
-        // Client-side only (no filter saved yet — shouldn't happen normally)
-        if (state.favoriteIds.includes(scheduleId)) {
-            state.favoriteIds = state.favoriteIds.filter(id => id !== scheduleId);
-        } else {
-            state.favoriteIds = [...state.favoriteIds, scheduleId];
-        }
-        render();
+        alert('Please generate schedules first before adding to favourites.');
         return;
     }
 
     try {
         const result = await apiToggleFavourite(state.currentFilterId, scheduleId);
         if (result && result.Added) {
-            state.favoriteIds = [...state.favoriteIds, scheduleId];
-            // Add to persistedFavourites so it shows immediately
-            const sched = state.generatedSchedules.find(s => s.id === scheduleId);
-            if (sched && !state.persistedFavourites.find(f => f.id === scheduleId))
-                state.persistedFavourites = [...state.persistedFavourites, sched];
-        } else {
-            state.favoriteIds = state.favoriteIds.filter(id => id !== scheduleId);
-            state.persistedFavourites = state.persistedFavourites.filter(f => f.id !== scheduleId);
+            // Reload all favourites from DB to get correct favId
+            const allFavs = await apiGetAllFavourites();
+            state.persistedFavourites = allFavs;
+            state.favoriteIds = allFavs.map(f => f.id);
         }
     } catch (e) {
         alert('Could not update favourites: ' + e.message);

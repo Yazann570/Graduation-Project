@@ -12,6 +12,7 @@ namespace SmartSchedulingSystem.Services
         Task<List<FavouriteDto>> GetFavouritesAsync(string studentId, int filterId);
         Task<List<FavouriteDto>> GetAllFavouritesAsync(string studentId);
         Task<bool> ToggleFavouriteAsync(ToggleFavouriteRequest req, string studentId);
+        Task<bool> RemoveFavouriteByIdAsync(int favId, string studentId);
         Task<List<FilterDto>> GetAllFiltersAsync(string studentId);
         Task<List<SelectedCourseDto>> GetSelectedCoursesAsync(string studentId);
         Task AddCourseAsync(string studentId, AddCourseRequest req);
@@ -285,6 +286,20 @@ namespace SmartSchedulingSystem.Services
                     Schedule = MapSchedule(f.GeneratedSchedule, sections, isFav: true),
                 };
             }).ToList();
+        }
+
+        // ── 4c. Remove favourite by FAV_ID ───────────────────
+        public async Task<bool> RemoveFavouriteByIdAsync(int favId, string studentId)
+        {
+            // Verify it belongs to this student before deleting
+            var fav = await _db.Favourites
+                .Include(f => f.Filter)
+                .FirstOrDefaultAsync(f => f.FavId == favId && f.Filter.StId == studentId);
+
+            if (fav == null) return false;
+
+            await ExecSql("DELETE FROM FAVOURITE WHERE FAV_ID = {0}", favId);
+            return true;
         }
 
         // ── 4b. Get ALL favourites across all filters ────────

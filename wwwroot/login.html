@@ -3,74 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GJU Student Portal – Login</title>
+    <title>PSUT Student Portal – Login</title>
     <link rel="stylesheet" href="/css/site.css" />
     <style>
         body {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background: #f4f6f9;
+            background: #f0f4f8;
         }
 
-        /* ── Header ── */
-        .login-header {
-            background: linear-gradient(135deg, #002C40 0%, #09618a 40%, #0a8abf 70%, #1aa3cc 100%);
-            padding: 0 32px;
-            height: 90px;
-            display: flex;
-            align-items: center;
-            gap: 18px;
-        }
 
-            .login-header .emblem {
-                width: 64px;
-                height: 64px;
-                background: #fff;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid rgba(255,255,255,0.4);
-                overflow: hidden;
-                flex-shrink: 0;
-            }
-
-                .login-header .emblem img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: contain;
-                }
-
-                .login-header .emblem svg {
-                    width: 44px;
-                    height: 44px;
-                }
-
-            .login-header .title {
-                color: #fff;
-            }
-
-                .login-header .title .ar {
-                    font-size: 18px;
-                    font-weight: bold;
-                }
-
-                .login-header .title .en {
-                    font-size: 13px;
-                    opacity: 0.88;
-                    margin-top: 2px;
-                }
-
-                .login-header .title .badge {
-                    font-size: 11px;
-                    background: rgba(255,255,255,0.15);
-                    border: 1px solid rgba(255,255,255,0.3);
-                    border-radius: 12px;
-                    padding: 2px 10px;
-                    display: inline-block;
-                    margin-top: 4px;
-                }
 
         /* ── Card ── */
         .login-wrap {
@@ -85,9 +28,9 @@
             background: #fff;
             border-radius: 12px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-            padding: 48px 40px 40px;
+            padding: 36px 40px 40px;
             width: 100%;
-            max-width: 420px;
+            max-width: 440px;
         }
 
             .login-card h1 {
@@ -190,30 +133,21 @@
 </head>
 <body>
 
-    <!-- Header -->
-    <div class="login-header">
-        <div class="emblem">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="22" fill="#002C40" stroke="#09618a" stroke-width="2" />
-                <path d="M24 8 L30 20 L44 20 L33 28 L37 42 L24 34 L11 42 L15 28 L4 20 L18 20 Z"
-                      fill="#09618a" opacity="0.7" />
-                <circle cx="24" cy="24" r="6" fill="#fff" opacity="0.9" />
-                <text x="24" y="28" text-anchor="middle" fill="#002C40"
-                      font-size="7" font-weight="bold" font-family="Arial">GJU</text>
-            </svg>
-        </div>
-        <div class="title">
-            <div class="ar">الجامعة الألمانية الأردنية</div>
-            <div class="en">Princess Sumaya University for Technology</div>
-            <div class="badge">Student Portal</div>
-        </div>
-    </div>
+
 
     <!-- Login card -->
     <div class="login-wrap">
         <div class="login-card">
-            <h1>Welcome Back</h1>
-            <p class="sub">Enter your Student ID to access the portal.</p>
+            <!-- PSUT Logo centered above the form -->
+            <div style="text-align:center; margin-bottom:28px;">
+                <img src="/images/psutIcon.png" alt="PSUT Logo"
+                     style="height:110px; object-fit:contain;" />
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+                <span style="font-size:13px;color:#888;">تسجيل الدخول</span>
+                <div style="flex:1;height:1px;background:#e0e0e0;"></div>
+            </div>
 
             <div class="form-group">
                 <label for="studentId">Student ID</label>
@@ -233,59 +167,59 @@
     </div>
 
     <script>
-  // If already logged in, skip login page
-  (async () => {
-    try {
-      const res  = await fetch('/api/auth/me');
-      const json = await res.json();
-      if (json.Success) window.location.href = '/';
-    } catch (_) { /* not logged in, stay on page */ }
-  })();
+        // If already logged in, skip login page
+        (async () => {
+            try {
+                const res = await fetch('/api/auth/me');
+                const json = await res.json();
+                if (json.Success) window.location.href = '/';
+            } catch (_) { /* not logged in, stay on page */ }
+        })();
 
-  const input  = document.getElementById('studentId');
-  const btn    = document.getElementById('loginBtn');
-  const errBox = document.getElementById('errorMsg');
+        const input = document.getElementById('studentId');
+        const btn = document.getElementById('loginBtn');
+        const errBox = document.getElementById('errorMsg');
 
-  // Allow pressing Enter
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+        // Allow pressing Enter
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
-  async function doLogin() {
-    const id = input.value.trim();
-    if (!id) { showError('Please enter your Student ID.'); return; }
+        async function doLogin() {
+            const id = input.value.trim();
+            if (!id) { showError('Please enter your Student ID.'); return; }
 
-    btn.disabled  = true;
-    btn.textContent = 'Signing in…';
-    hideError();
+            btn.disabled = true;
+            btn.textContent = 'Signing in…';
+            hideError();
 
-    try {
-      const res  = await fetch('/api/auth/login', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ StudentId: id }),
-      });
-      const json = await res.json();
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ StudentId: id }),
+                });
+                const json = await res.json();
 
-      if (json.Success) {
-        window.location.href = '/';
-      } else {
-        showError(json.Message || 'Login failed.');
-        btn.disabled    = false;
-        btn.textContent = 'Sign In';
-      }
-    } catch (e) {
-      showError('Cannot reach the server. Make sure the app is running.');
-      btn.disabled    = false;
-      btn.textContent = 'Sign In';
-    }
-  }
+                if (json.Success) {
+                    window.location.href = '/';
+                } else {
+                    showError(json.Message || 'Login failed.');
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                }
+            } catch (e) {
+                showError('Cannot reach the server. Make sure the app is running.');
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
 
-  function showError(msg) {
-    errBox.textContent = msg;
-    errBox.classList.add('visible');
-  }
-  function hideError() {
-    errBox.classList.remove('visible');
-  }
+        function showError(msg) {
+            errBox.textContent = msg;
+            errBox.classList.add('visible');
+        }
+        function hideError() {
+            errBox.classList.remove('visible');
+        }
     </script>
 
 </body>

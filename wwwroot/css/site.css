@@ -63,7 +63,7 @@ th, td {
     align-items: center;
     padding: 0 24px;
     height: 90px;
-    background-color: white;
+    background: linear-gradient(135deg, #002C40 0%, #09618a 40%, #0a8abf 70%, #1aa3cc 100%);
 }
 
 #header-logo-area {
@@ -72,12 +72,11 @@ th, td {
     gap: 18px;
 }
 
-
-
-    #header-emblem svg {
-        width: 48px;
-        height: 48px;
-    }
+#header-emblem {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
 
 #header-text {
     color: #fff;

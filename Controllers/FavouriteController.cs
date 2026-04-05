@@ -11,7 +11,7 @@ namespace SmartSchedulingSystem.Controllers
         private readonly ISchedulerService _svc;
         public FavouriteController(ISchedulerService svc) => _svc = svc;
 
-        // GET /api/favourite/all  — all favourites for the student across all filters
+        // GET /api/favourite/all — all favourites for this student across all filters
         [HttpGet("all")]
         public async Task<IActionResult> GetAll()
         {
@@ -22,7 +22,7 @@ namespace SmartSchedulingSystem.Controllers
             return Ok(ApiResponse<List<FavouriteDto>>.Ok(favs));
         }
 
-        // GET /api/favourite?filterId=3  — favourites for a specific filter
+        // GET /api/favourite?filterId=3
         [HttpGet]
         public async Task<IActionResult> GetByFilter([FromQuery] int filterId)
         {
@@ -31,6 +31,26 @@ namespace SmartSchedulingSystem.Controllers
 
             var favs = await _svc.GetFavouritesAsync(studentId, filterId);
             return Ok(ApiResponse<List<FavouriteDto>>.Ok(favs));
+        }
+
+        // DELETE /api/favourite/{favId} — remove a specific favourite by its FAV_ID
+        [HttpDelete("{favId:int}")]
+        public async Task<IActionResult> Remove(int favId)
+        {
+            var auth = RequireLogin(out var studentId);
+            if (auth != null) return auth;
+
+            try
+            {
+                bool removed = await _svc.RemoveFavouriteByIdAsync(favId, studentId);
+                if (!removed)
+                    return NotFound(ApiResponse<bool>.Fail("Favourite not found."));
+                return Ok(ApiResponse<bool>.Ok(true, "Removed from favourites."));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<bool>.Fail(ex.Message));
+            }
         }
 
         // POST /api/favourite/toggle
