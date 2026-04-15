@@ -1,17 +1,10 @@
--- ============================================================
---  SmartSchedulingSystem – Oracle DDL
---  Run once on your Oracle instance, then set the connection
---  string in appsettings.json.
--- ============================================================
 
--- Sequences
 CREATE SEQUENCE SEQ_INSTRUCTOR      START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE SEQ_SECTION         START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE SEQ_FILTER          START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE SEQ_GENERATED_SCHED START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE SEQ_FAV             START WITH 1 INCREMENT BY 1;
 
--- ── Tables ────────────────────────────────────────────────────
 
 CREATE TABLE STUDENT (
     ST_ID     VARCHAR2(20)  PRIMARY KEY,
@@ -19,9 +12,7 @@ CREATE TABLE STUDENT (
     PHONE_NUM VARCHAR2(20)
 );
 
--- C_TYPE:  CP=compulsory-program  CS=compulsory-school  CU=compulsory-university
---          EU=elective-university  EP=elective-program
--- IS_ONLINE: N=on-site  Y=online  B=blended
+
 CREATE TABLE COURSE (
     C_ID      VARCHAR2(20)  PRIMARY KEY,
     C_NAME    VARCHAR2(200) NOT NULL,
@@ -99,7 +90,6 @@ CREATE TABLE FAVOURITE (
     UNIQUE (F_ID, SCHED_ID)
 );
 
--- ── Indexes ───────────────────────────────────────────────────
 CREATE INDEX IDX_SECTION_COURSE ON SECTION(C_ID);
 CREATE INDEX IDX_SECTION_INSTR  ON SECTION(I_ID);
 CREATE INDEX IDX_SC_STUDENT     ON STUDENT_COURSE(ST_ID);
@@ -109,11 +99,9 @@ CREATE INDEX IDX_GSEC_SCHED     ON GENERATED_SECTION(SCHED_ID);
 CREATE INDEX IDX_FAV_FILTER     ON FAVOURITE(F_ID);
 CREATE INDEX IDX_IA_STUDENT     ON INSTRUCTOR_ADDED(ST_ID);
 
--- ── Seed data ─────────────────────────────────────────────────
--- Single student (matches AppSettings:StudentId in appsettings.json)
+
 INSERT INTO STUDENT VALUES ('20210001', 'student@gju.edu.jo', '0791234567');
 
--- Courses
 INSERT INTO COURSE VALUES ('11212', 'Data Structures and Introduction to Algorithms', 3, 2, 'N', 'CP');
 INSERT INTO COURSE VALUES ('20234', 'Linear Algebra',                                 3, 2, 'N', 'CS');
 INSERT INTO COURSE VALUES ('31374', 'Life Skills',                                    3, 2, 'N', 'CU');
@@ -126,7 +114,6 @@ INSERT INTO COURSE VALUES ('22541', 'Computer Architecture',                    
 INSERT INTO COURSE VALUES ('12324', 'Human Computer Interaction',                     3, 0,    'B', 'CP');
 INSERT INTO COURSE VALUES ('11493', 'Graduation Project 1',                           1, 0,    'N', 'CP');
 
--- Instructors
 INSERT INTO INSTRUCTOR VALUES (SEQ_INSTRUCTOR.NEXTVAL, 'Ibrahim Albluwi');       
 INSERT INTO INSTRUCTOR VALUES (SEQ_INSTRUCTOR.NEXTVAL, 'Raghda Hreiz');          
 INSERT INTO INSTRUCTOR VALUES (SEQ_INSTRUCTOR.NEXTVAL, 'Samer Sawalha');         

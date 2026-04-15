@@ -167,7 +167,6 @@ namespace SmartSchedulingSystem.Services
         // ── 3. Generate schedules ────────────────────────────
         public async Task<List<ScheduleResultDto>> GenerateSchedulesAsync(int filterId, string studentId)
         {
-            // Debug: check what filters actually exist for this student
             var allFilters = await _db.Filters
                 .Where(f => f.StId == studentId)
                 .Select(f => f.FId)
@@ -220,7 +219,6 @@ namespace SmartSchedulingSystem.Services
 
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
-            // Delete old data in FK-safe order: FAVOURITE → GENERATED_SECTION → GENERATED_SCHEDULE
             var oldFavs = await _db.Favourites.Where(f => f.FId == filterId).ToListAsync();
             _db.Favourites.RemoveRange(oldFavs);
             await _db.SaveChangesAsync();
@@ -236,7 +234,6 @@ namespace SmartSchedulingSystem.Services
             _db.GeneratedSchedules.RemoveRange(oldScheds);
             await _db.SaveChangesAsync();
 
-            // Persist new schedules — fetch each ID from Oracle before insert
             var dtos = new List<ScheduleResultDto>();
             foreach (var combo in results)
             {
@@ -259,7 +256,6 @@ namespace SmartSchedulingSystem.Services
             return dtos;
         }
 
-        // ── 4. Get favourites ────────────────────────────────
         public async Task<List<FavouriteDto>> GetFavouritesAsync(string studentId, int filterId)
         {
             var favs = await _db.Favourites
