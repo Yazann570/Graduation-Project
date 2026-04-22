@@ -13,6 +13,7 @@ namespace SmartSchedulingSystem.Data
         public DbSet<Section> Sections { get; set; }
         public DbSet<DayGroupSection> DayGroupSections { get; set; }
         public DbSet<StudentCourse> StudentCourses { get; set; }
+        public DbSet<StudentRemainingCourse> StudentRemainingCourses { get; set; }
         public DbSet<Filter> Filters { get; set; }
         public DbSet<DayGroupFilter> DayGroupFilters { get; set; }
         public DbSet<InstructorAdded> InstructorsAdded { get; set; }
@@ -38,6 +39,12 @@ namespace SmartSchedulingSystem.Data
                 .HasOne(d => d.Course).WithMany(c => c.DayGroupSections).HasForeignKey(d => d.CId);
 
             // ── StudentCourse ─────────────────────────────────
+            mb.Entity<StudentRemainingCourse>().HasKey(sr => new { sr.StId, sr.CId });
+            mb.Entity<StudentRemainingCourse>()
+                .HasOne(sr => sr.Student).WithMany(s => s.RemainingCourses).HasForeignKey(sr => sr.StId);
+            mb.Entity<StudentRemainingCourse>()
+                .HasOne(sr => sr.Course).WithMany(c => c.StudentRemainingCourses).HasForeignKey(sr => sr.CId);
+
             mb.Entity<StudentCourse>().HasKey(sc => new { sc.StId, sc.CId });
             mb.Entity<StudentCourse>()
                 .HasOne(sc => sc.Student).WithMany(s => s.StudentCourses).HasForeignKey(sc => sc.StId);

@@ -26,6 +26,7 @@ namespace SmartSchedulingSystem.Models
         public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
         public ICollection<Filter> Filters { get; set; } = new List<Filter>();
         public ICollection<InstructorAdded> InstructorsAdded { get; set; } = new List<InstructorAdded>();
+        public ICollection<StudentRemainingCourse> RemainingCourses { get; set; } = new List<StudentRemainingCourse>();
     }
 
     [Table("COURSE")]
@@ -61,6 +62,7 @@ namespace SmartSchedulingSystem.Models
         public ICollection<DayGroupSection> DayGroupSections { get; set; } = new List<DayGroupSection>();
         public ICollection<GeneratedSection> GeneratedSections { get; set; } = new List<GeneratedSection>();
         public ICollection<InstructorAdded> InstructorsAdded { get; set; } = new List<InstructorAdded>();
+        public ICollection<StudentRemainingCourse> StudentRemainingCourses { get; set; } = new List<StudentRemainingCourse>();
     }
 
     [Table("INSTRUCTOR")]
@@ -103,6 +105,15 @@ namespace SmartSchedulingSystem.Models
         [Column("DAY")][MaxLength(3)] public string Day { get; set; } = null!;
         [Column("C_ID")][MaxLength(20)] public string CId { get; set; } = null!;
         public Section Section { get; set; } = null!;
+        public Course Course { get; set; } = null!;
+    }
+
+    [Table("STUDENT_REMAINING_COURSE")]
+    public class StudentRemainingCourse
+    {
+        [Column("ST_ID")][MaxLength(20)] public string StId { get; set; } = null!;
+        [Column("C_ID")][MaxLength(20)] public string CId { get; set; } = null!;
+        public Student Student { get; set; } = null!;
         public Course Course { get; set; } = null!;
     }
 

@@ -89,17 +89,30 @@ namespace SmartSchedulingSystem.Services
         }
 
         // ── 1. Remaining courses ─────────────────────────────
-        // Returns all courses the student has NOT yet added to their selected list
+        // Reads from STUDENT_REMAINING_COURSE (per-student list) minus
+        // anything already added to STUDENT_COURSE (selected for scheduling)
         public async Task<List<RemainingCourseDto>> GetRemainingCoursesAsync(string studentId)
         {
+            // Courses this student has already added to the scheduler
             var selectedIds = await _db.StudentCourses
                 .Where(sc => sc.StId == studentId)
                 .Select(sc => sc.CId)
                 .ToListAsync();
 
+            // Courses assigned to this student from STUDENT_REMAINING_COURSE
+            var remainingIds = await _db.StudentRemainingCourses
+                .Where(sr => sr.StId == studentId)
+                .Select(sr => sr.CId)
+                .ToListAsync();
+
+            // Only show courses that are in student's remaining list AND not yet selected
+            var toShow = remainingIds.Except(selectedIds).ToList();
+
+            if (toShow.Count == 0) return new List<RemainingCourseDto>();
+
             var courses = await _db.Courses
                 .Include(c => c.Sections).ThenInclude(s => s.Instructor)
-                .Where(c => !selectedIds.Contains(c.CId))
+                .Where(c => toShow.Contains(c.CId))
                 .ToListAsync();
 
             return courses.Select(c => new RemainingCourseDto
@@ -167,6 +180,7 @@ namespace SmartSchedulingSystem.Services
         // ── 3. Generate schedules ────────────────────────────
         public async Task<List<ScheduleResultDto>> GenerateSchedulesAsync(int filterId, string studentId)
         {
+            // Debug: check what filters actually exist for this student
             var allFilters = await _db.Filters
                 .Where(f => f.StId == studentId)
                 .Select(f => f.FId)
@@ -219,6 +233,7 @@ namespace SmartSchedulingSystem.Services
 
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
+            // Delete old data in FK-safe order: FAVOURITE → GENERATED_SECTION → GENERATED_SCHEDULE
             var oldFavs = await _db.Favourites.Where(f => f.FId == filterId).ToListAsync();
             _db.Favourites.RemoveRange(oldFavs);
             await _db.SaveChangesAsync();
@@ -234,6 +249,7 @@ namespace SmartSchedulingSystem.Services
             _db.GeneratedSchedules.RemoveRange(oldScheds);
             await _db.SaveChangesAsync();
 
+            // Persist new schedules — fetch each ID from Oracle before insert
             var dtos = new List<ScheduleResultDto>();
             foreach (var combo in results)
             {
@@ -256,6 +272,7 @@ namespace SmartSchedulingSystem.Services
             return dtos;
         }
 
+        // ── 4. Get favourites ────────────────────────────────
         public async Task<List<FavouriteDto>> GetFavouritesAsync(string studentId, int filterId)
         {
             var favs = await _db.Favourites
