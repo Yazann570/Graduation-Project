@@ -563,11 +563,19 @@ namespace SmartSchedulingSystem.Services
 
                 if (candStart < secEnd && candEnd > secStart) return true;
 
-                int gapMin = candStart > secEnd
-                    ? (int)(candStart - secEnd).TotalMinutes
-                    : (int)(secStart - candEnd).TotalMinutes;
+                //int gapMin = candStart > secEnd
+                //    ? (int)(candStart - secEnd).TotalMinutes
+                //    : (int)(secStart - candEnd).TotalMinutes;
+                int gapMin;
 
-                if (gapMin < minBreak || gapMin > maxBreak) return true;
+                if (candEnd <= secStart)
+                    gapMin = (int)(secStart - candEnd).TotalMinutes;
+                else if (secEnd <= candStart)
+                    gapMin = (int)(candStart - secEnd).TotalMinutes;
+                else
+                    return true; // overlap
+
+                //if (gapMin < minBreak || gapMin > maxBreak) return true;
             }
             return false;
         }
