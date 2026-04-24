@@ -180,6 +180,7 @@ namespace SmartSchedulingSystem.Services
         // ── 3. Generate schedules ────────────────────────────
         public async Task<List<ScheduleResultDto>> GenerateSchedulesAsync(int filterId, string studentId)
         {
+            Console.WriteLine("ENters");
             // Debug: check what filters actually exist for this student
             var allFilters = await _db.Filters
                 .Where(f => f.StId == studentId)
@@ -197,11 +198,16 @@ namespace SmartSchedulingSystem.Services
             var filterStart = TimeOnly.Parse(filter.STime);
             var filterEnd = TimeOnly.Parse(filter.FTime);
 
+
+
+
+
+
             var prefs = await _db.InstructorsAdded
                 .Where(ia => ia.StId == studentId)
                 .GroupBy(ia => ia.CId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(ia => ia.IId).ToHashSet());
-
+            Console.WriteLine(prefs.Count.ToString());
             if (prefs.Count == 0) return new List<ScheduleResultDto>();
 
             var allSections = await _db.Sections
@@ -210,6 +216,31 @@ namespace SmartSchedulingSystem.Services
                 .Include(s => s.DayGroupSections)
                 .Where(s => prefs.Keys.Contains(s.CId))
                 .ToListAsync();
+
+
+            Console.WriteLine($"[DEBUG] Filter: {filter.STime}-{filter.FTime} | Parsed: {filterStart}-{filterEnd}");
+            Console.WriteLine($"[DEBUG] Allowed days: {string.Join(", ", allowedDays)}");
+            Console.WriteLine($"[DEBUG] Prefs (courses+instructors): {string.Join(", ", prefs.Select(p => $"{p.Key}:[{string.Join(",", p.Value)}]"))}");
+
+            // DEBUG 2 — how many sections exist for these courses at all?
+            Console.WriteLine($"[DEBUG] Total sections pulled from DB: {allSections.Count}");
+            foreach (var s in allSections)
+            {
+                var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
+                var start = TimeOnly.Parse(s.STime);
+                var end = TimeOnly.Parse(s.FTime);
+
+                bool instrOk = !prefs.TryGetValue(s.CId, out var ids) || ids.Contains(s.IId);
+                bool daysOk = secDays.IsSubsetOf(allowedDays);
+                bool timeOk = start >= filterStart && end <= filterEnd;
+
+                Console.WriteLine($"[DEBUG] Section {s.SecId} | Course {s.CId} | Instructor {s.IId} | " +
+                                  $"{s.STime}-{s.FTime} | Days: {string.Join(",", secDays)} | " +
+                                  $"instrOk={instrOk} daysOk={daysOk} timeOk={timeOk}");
+            }
+
+
+
 
             var candidatesByCourse = allSections
                 .Where(s =>
@@ -223,12 +254,39 @@ namespace SmartSchedulingSystem.Services
                 })
                 .GroupBy(s => s.CId)
                 .ToDictionary(g => g.Key, g => g.ToList());
-
+            Console.WriteLine(candidatesByCourse.Count.ToString());
             if (candidatesByCourse.Count < prefs.Count)
                 return new List<ScheduleResultDto>();
 
             var results = new List<List<Section>>();
             var courseList = candidatesByCourse.Values.ToList();
+
+            Console.WriteLine($"[DEBUG] Filter: {filter.STime}-{filter.FTime} | Parsed: {filterStart}-{filterEnd}");
+            Console.WriteLine($"[DEBUG] Allowed days: {string.Join(", ", allowedDays)}");
+            Console.WriteLine($"[DEBUG] Prefs (courses+instructors): {string.Join(", ", prefs.Select(p => $"{p.Key}:[{string.Join(",", p.Value)}]"))}");
+
+            // DEBUG 2 — how many sections exist for these courses at all?
+            Console.WriteLine($"[DEBUG] Total sections pulled from DB: {allSections.Count}");
+            foreach (var s in allSections)
+            {
+                var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
+                var start = TimeOnly.Parse(s.STime);
+                var end = TimeOnly.Parse(s.FTime);
+
+                bool instrOk = !prefs.TryGetValue(s.CId, out var ids) || ids.Contains(s.IId);
+                bool daysOk = secDays.IsSubsetOf(allowedDays);
+                bool timeOk = start >= filterStart && end <= filterEnd;
+
+                Console.WriteLine($"[DEBUG] Section {s.SecId} | Course {s.CId} | Instructor {s.IId} | " +
+                                  $"{s.STime}-{s.FTime} | Days: {string.Join(",", secDays)} | " +
+                                  $"instrOk={instrOk} daysOk={daysOk} timeOk={timeOk}");
+            }
+
+
+
+
+
+
             Backtrack(courseList, 0, new List<Section>(), filter, results, maxResults: 10);
 
             if (results.Count == 0) return new List<ScheduleResultDto>();

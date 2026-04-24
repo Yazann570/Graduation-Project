@@ -117,6 +117,7 @@ async function apiGenerateSchedules(filterId) {
         method: 'POST',
         body: JSON.stringify({ FilterId: filterId }),
     });
+    console.log(schedules);
     if (!schedules) return [];
 
     const typeMap = {
@@ -1060,15 +1061,16 @@ async function generateSchedules() {
 
         // Step 2 — run the algorithm
         const schedules = await apiGenerateSchedules(filter.FId);
-
+        console.log(schedules);
         if (schedules.length === 0) {
             state.generatedSchedules = [];
             state.noSchedulesFound = true;
+            console.log("No schedules returned");
         } else {
             state.generatedSchedules = schedules;
             state.currentScheduleIndex = 0;
             state.noSchedulesFound = false;
-
+            console.log(schedules);
             // Reload all persisted favourites after generate
             try {
                 const allFavs = await apiGetAllFavourites();
