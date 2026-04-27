@@ -87,6 +87,13 @@ namespace SmartSchedulingSystem.Services
                 if (weOpenedIt) await conn.CloseAsync();
             }
         }
+        private static bool IsNoInstructorRequiredCourse(Course course)
+        {
+            return course.CId == "11493"
+                || course.CId == "11494"
+                || course.CId == "11391";
+        }
+
 
         // ── 1. Remaining courses ─────────────────────────────
         // Reads from STUDENT_REMAINING_COURSE (per-student list) minus
@@ -180,7 +187,6 @@ namespace SmartSchedulingSystem.Services
         // ── 3. Generate schedules ────────────────────────────
         public async Task<List<ScheduleResultDto>> GenerateSchedulesAsync(int filterId, string studentId)
         {
-            Console.WriteLine("ENters");
             // Debug: check what filters actually exist for this student
             var allFilters = await _db.Filters
                 .Where(f => f.StId == studentId)
@@ -198,96 +204,79 @@ namespace SmartSchedulingSystem.Services
             var filterStart = TimeOnly.Parse(filter.STime);
             var filterEnd = TimeOnly.Parse(filter.FTime);
 
-
-
-
-
-
             var prefs = await _db.InstructorsAdded
                 .Where(ia => ia.StId == studentId)
                 .GroupBy(ia => ia.CId)
                 .ToDictionaryAsync(g => g.Key, g => g.Select(ia => ia.IId).ToHashSet());
-            Console.WriteLine(prefs.Count.ToString());
-            if (prefs.Count == 0) return new List<ScheduleResultDto>();
+
+            var selectedCourseIds = await _db.StudentCourses
+            .Where(sc => sc.StId == studentId)
+            .Select(sc => sc.CId)
+            .ToListAsync();
+
+            var noInstructorCourseIds = await _db.Courses
+                .Where(c => selectedCourseIds.Contains(c.CId))
+                .ToListAsync();
+
+            var alwaysIncludedCourseIds = noInstructorCourseIds
+                .Where(IsNoInstructorRequiredCourse)
+                .Select(c => c.CId)
+                .ToList();
+
+            var schedulingCourseIds = selectedCourseIds
+                .Except(alwaysIncludedCourseIds)
+                .ToList();
+
+            if (schedulingCourseIds.Count == 0 && alwaysIncludedCourseIds.Count == 0)
+                return new List<ScheduleResultDto>();
 
             var allSections = await _db.Sections
                 .Include(s => s.Course)
                 .Include(s => s.Instructor)
                 .Include(s => s.DayGroupSections)
-                .Where(s => prefs.Keys.Contains(s.CId))
+                .Where(s => schedulingCourseIds.Contains(s.CId))
                 .ToListAsync();
-
-
-            Console.WriteLine($"[DEBUG] Filter: {filter.STime}-{filter.FTime} | Parsed: {filterStart}-{filterEnd}");
-            Console.WriteLine($"[DEBUG] Allowed days: {string.Join(", ", allowedDays)}");
-            Console.WriteLine($"[DEBUG] Prefs (courses+instructors): {string.Join(", ", prefs.Select(p => $"{p.Key}:[{string.Join(",", p.Value)}]"))}");
-
-            // DEBUG 2 — how many sections exist for these courses at all?
-            Console.WriteLine($"[DEBUG] Total sections pulled from DB: {allSections.Count}");
-            foreach (var s in allSections)
+            foreach (var c in noInstructorCourseIds)
             {
-                var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
-                var start = TimeOnly.Parse(s.STime);
-                var end = TimeOnly.Parse(s.FTime);
-
-                bool instrOk = !prefs.TryGetValue(s.CId, out var ids) || ids.Contains(s.IId);
-                bool daysOk = secDays.IsSubsetOf(allowedDays);
-                bool timeOk = start >= filterStart && end <= filterEnd;
-
-                Console.WriteLine($"[DEBUG] Section {s.SecId} | Course {s.CId} | Instructor {s.IId} | " +
-                                  $"{s.STime}-{s.FTime} | Days: {string.Join(",", secDays)} | " +
-                                  $"instrOk={instrOk} daysOk={daysOk} timeOk={timeOk}");
+                Console.WriteLine($"Course ID: {c.CId}, Course Name: {c.CName}");
             }
-
-
-
-
             var candidatesByCourse = allSections
                 .Where(s =>
                 {
                     if (prefs.TryGetValue(s.CId, out var ids) && !ids.Contains(s.IId)) return false;
                     var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
-                    if (!secDays.IsSubsetOf(allowedDays)) return false;
+
+                    // Blended sections (IS_ONLINE='B') have physical days AND online days.
+                    // For blended: accept if at least one day falls in the student's allowed days.
+                    // For all others: all section days must be within allowed days.
+                    bool isBlended = s.Course.IsOnline == "B";
+                    if (isBlended)
+                    {
+                        if (!secDays.Intersect(allowedDays).Any()) return false;
+                    }
+                    else
+                    {
+                        if (!secDays.IsSubsetOf(allowedDays)) return false;
+                    }
+
                     var start = TimeOnly.Parse(s.STime);
                     var end = TimeOnly.Parse(s.FTime);
                     return start >= filterStart && end <= filterEnd;
                 })
                 .GroupBy(s => s.CId)
                 .ToDictionary(g => g.Key, g => g.ToList());
-            Console.WriteLine(candidatesByCourse.Count.ToString());
+
             if (candidatesByCourse.Count < prefs.Count)
                 return new List<ScheduleResultDto>();
 
             var results = new List<List<Section>>();
+
+            var alwaysIncludedCourses = await _db.Courses
+            .Where(c => alwaysIncludedCourseIds.Contains(c.CId))
+            .ToListAsync();
+
             var courseList = candidatesByCourse.Values.ToList();
-
-            Console.WriteLine($"[DEBUG] Filter: {filter.STime}-{filter.FTime} | Parsed: {filterStart}-{filterEnd}");
-            Console.WriteLine($"[DEBUG] Allowed days: {string.Join(", ", allowedDays)}");
-            Console.WriteLine($"[DEBUG] Prefs (courses+instructors): {string.Join(", ", prefs.Select(p => $"{p.Key}:[{string.Join(",", p.Value)}]"))}");
-
-            // DEBUG 2 — how many sections exist for these courses at all?
-            Console.WriteLine($"[DEBUG] Total sections pulled from DB: {allSections.Count}");
-            foreach (var s in allSections)
-            {
-                var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
-                var start = TimeOnly.Parse(s.STime);
-                var end = TimeOnly.Parse(s.FTime);
-
-                bool instrOk = !prefs.TryGetValue(s.CId, out var ids) || ids.Contains(s.IId);
-                bool daysOk = secDays.IsSubsetOf(allowedDays);
-                bool timeOk = start >= filterStart && end <= filterEnd;
-
-                Console.WriteLine($"[DEBUG] Section {s.SecId} | Course {s.CId} | Instructor {s.IId} | " +
-                                  $"{s.STime}-{s.FTime} | Days: {string.Join(",", secDays)} | " +
-                                  $"instrOk={instrOk} daysOk={daysOk} timeOk={timeOk}");
-            }
-
-
-
-
-
-
-            Backtrack(courseList, 0, new List<Section>(), filter, results, maxResults: 10);
+            Backtrack(courseList, 0, new List<Section>(), filter, allowedDays, results, maxResults: 10);
 
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
@@ -311,6 +300,7 @@ namespace SmartSchedulingSystem.Services
             var dtos = new List<ScheduleResultDto>();
             foreach (var combo in results)
             {
+                
                 int schedId = await NextVal("SEQ_GENERATED_SCHED");
 
                 await _db.Database.ExecuteSqlRawAsync(
@@ -325,7 +315,28 @@ namespace SmartSchedulingSystem.Services
 
                 var sched = new GeneratedSchedule
                 { SchedId = schedId, FId = filterId, CreationDate = DateTime.UtcNow };
-                dtos.Add(MapSchedule(sched, combo, isFav: false));
+                var dto = MapSchedule(sched, combo, isFav: false);
+
+                foreach (var c in alwaysIncludedCourses)
+                {
+                    dto.Courses.Add(new ScheduledCourseDto
+                    {
+                        CourseNumber = c.CId,
+                        CourseName = c.CName,
+                        CType = c.CType,
+                        RequirementLabel = RequirementLabels.GetValueOrDefault(c.CType, c.CType),
+                        SectionNum = 0,
+                        InstructorName = "-",
+                        StartTime = "—",
+                        EndTime = "—",
+                        Days = "—",
+                        Hours = c.CHrs
+                    });
+
+                    dto.TotalHours += c.CHrs;
+                }
+
+                dtos.Add(dto);
             }
             return dtos;
         }
@@ -529,55 +540,112 @@ namespace SmartSchedulingSystem.Services
 
         // ── Private helpers ──────────────────────────────────
         private static void Backtrack(
-            List<List<Section>> byCourse, int idx,
-            List<Section> current, Filter filter,
-            List<List<Section>> results, int maxResults)
+    List<List<Section>> byCourse, int idx,
+    List<Section> current, Filter filter,
+    HashSet<string> allowedDays,
+    List<List<Section>> results, int maxResults)
         {
             if (results.Count >= maxResults) return;
-            if (idx == byCourse.Count) { results.Add(new List<Section>(current)); return; }
+
+            if (idx == byCourse.Count)
+            {
+                // All courses placed — now validate break constraints on the full schedule
+                if (IsBreakValid(current, filter.MinBreak, filter.MaxBreak, allowedDays))
+                    results.Add(new List<Section>(current));
+                return;
+            }
 
             foreach (var sec in byCourse[idx])
             {
-                if (!HasConflict(sec, current, filter.MinBreak, filter.MaxBreak))
+                // Only check overlap here — breaks are checked after all courses are placed
+                if (!HasOverlap(sec, current, allowedDays))
                 {
                     current.Add(sec);
-                    Backtrack(byCourse, idx + 1, current, filter, results, maxResults);
+                    Backtrack(byCourse, idx + 1, current, filter, allowedDays, results, maxResults);
                     current.RemoveAt(current.Count - 1);
                 }
             }
         }
 
-        private static bool HasConflict(Section candidate, List<Section> chosen, int minBreak, int maxBreak)
+        /// <summary>
+        /// Checks whether <paramref name="candidate"/> conflicts with any already-chosen section.
+        ///
+        /// Rules:
+        /// 1. Time overlap on any shared effective day → always a conflict.
+        /// 2. Min/max break is checked ONLY between ADJACENT sections on the same day
+        ///    (the immediately preceding and following class).
+        ///    Checking all pairs was wrong: a 09-10 class and a 13-14 class with two
+        ///    classes between them should NOT be compared for break purposes.
+        /// 3. Blended sections (IS_ONLINE='B'): only days within allowedDays matter.
+        /// </summary>
+        private static bool HasOverlap(
+    Section candidate, List<Section> chosen,
+    HashSet<string> allowedDays)
         {
-            var candDays = candidate.DayGroupSections.Select(d => d.Day).ToHashSet();
+            var candEffective = candidate.DayGroupSections
+                .Select(d => d.Day)
+                .Where(d => allowedDays.Contains(d))
+                .ToHashSet();
+
+            if (!candEffective.Any()) return false;
+
             var candStart = TimeOnly.Parse(candidate.STime);
             var candEnd = TimeOnly.Parse(candidate.FTime);
 
-            foreach (var sec in chosen)
+            foreach (var day in candEffective)
             {
-                var secDays = sec.DayGroupSections.Select(d => d.Day).ToHashSet();
-                if (!candDays.Intersect(secDays).Any()) continue;
+                var onThisDay = chosen
+                    .Where(s => s.DayGroupSections
+                        .Select(d => d.Day)
+                        .Where(d => allowedDays.Contains(d))
+                        .Contains(day))
+                    .ToList();
 
-                var secStart = TimeOnly.Parse(sec.STime);
-                var secEnd = TimeOnly.Parse(sec.FTime);
-
-                if (candStart < secEnd && candEnd > secStart) return true;
-
-                //int gapMin = candStart > secEnd
-                //    ? (int)(candStart - secEnd).TotalMinutes
-                //    : (int)(secStart - candEnd).TotalMinutes;
-                int gapMin;
-
-                if (candEnd <= secStart)
-                    gapMin = (int)(secStart - candEnd).TotalMinutes;
-                else if (secEnd <= candStart)
-                    gapMin = (int)(candStart - secEnd).TotalMinutes;
-                else
-                    return true; // overlap
-
-                //if (gapMin < minBreak || gapMin > maxBreak) return true;
+                foreach (var sec in onThisDay)
+                {
+                    var secStart = TimeOnly.Parse(sec.STime);
+                    var secEnd = TimeOnly.Parse(sec.FTime);
+                    if (candStart < secEnd && candEnd > secStart) return true;
+                }
             }
+
             return false;
+        }
+
+        // Validates break constraints over a COMPLETE schedule combination.
+        // Called only when all courses have been placed.
+        private static bool IsBreakValid(
+            List<Section> sections, int minBreak, int maxBreak,
+            HashSet<string> allowedDays)
+        {
+            var allDays = sections
+                .SelectMany(s => s.DayGroupSections
+                    .Select(d => d.Day)
+                    .Where(d => allowedDays.Contains(d)))
+                .Distinct();
+
+            foreach (var day in allDays)
+            {
+                // All sections physically on this day, sorted by start time
+                var onThisDay = sections
+                    .Where(s => s.DayGroupSections
+                        .Select(d => d.Day)
+                        .Where(d => allowedDays.Contains(d))
+                        .Contains(day))
+                    .OrderBy(s => TimeOnly.Parse(s.STime))
+                    .ToList();
+
+                // Check every adjacent pair on this day
+                for (int i = 0; i < onThisDay.Count - 1; i++)
+                {
+                    int gap = (int)(TimeOnly.Parse(onThisDay[i + 1].STime)
+                                  - TimeOnly.Parse(onThisDay[i].FTime)).TotalMinutes;
+
+                    if (gap < minBreak || gap > maxBreak) return false;
+                }
+            }
+
+            return true;
         }
 
         private static ScheduleResultDto MapSchedule(

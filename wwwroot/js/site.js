@@ -359,7 +359,17 @@ function render() {
         area.innerHTML = `<div class="under-dev"><h1>${label}</h1><p>This section is under development.</p></div>`;
     }
 }
+function isNoInstructorRequiredCourse(course) {
+    const noInstructorRequiredCourses = [
+        'Graduation Project 1',
+        'Graduation Project 2',
+        'Practical Training'
+    ];
 
+    return noInstructorRequiredCourses.some(name =>
+        course.name.toLowerCase().includes(name.toLowerCase())
+    );
+}
 // ============================================================
 //  SMART SCHEDULER PAGE
 // ============================================================
@@ -393,24 +403,28 @@ function renderSmartScheduler() {
                   <td>${course.hours}</td>
                   <td>${rt.label}</td>
                   <td>
-                    <div class="dropdown-container" id="dc-${course.id}">
-                      <button class="dropdown-trigger" onclick="toggleDropdown('${course.id}', event)">
-                        <span id="dt-label-${course.id}">${label}</span>
-                        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </button>
-                      <div class="dropdown-menu ${state.openDropdown === course.id ? 'open' : ''}" id="dm-${course.id}">
-                        ${course.availableInstructors.map(instr => `
-                          <label>
-                            <input type="checkbox" ${selInstr.includes(instr) ? 'checked' : ''}
-                              onchange="toggleInstructor('${course.id}', '${instr}')" />
-                            ${instr}
-                          </label>
-                        `).join('')}
-                      </div>
-                    </div>
-                  </td>
+                      ${isNoInstructorRequiredCourse(course) ? `
+                        <span style="color:#666;">-</span>
+                      ` : `
+                        <div class="dropdown-container" id="dc-${course.id}">
+                          <button class="dropdown-trigger" onclick="toggleDropdown('${course.id}', event)">
+                            <span id="dt-label-${course.id}">${label}</span>
+                            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                          </button>
+                          <div class="dropdown-menu ${state.openDropdown === course.id ? 'open' : ''}" id="dm-${course.id}">
+                            ${course.availableInstructors.map(instr => `
+                              <label>
+                                <input type="checkbox" ${selInstr.includes(instr) ? 'checked' : ''}
+                                  onchange="toggleInstructor('${course.id}', '${instr}')" />
+                                ${instr}
+                              </label>
+                            `).join('')}
+                          </div>
+                        </div>
+                      `}
+                </td>
                   <td>
                     <button class="btn btn-primary" onclick="handleAddCourse('${course.id}')">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -462,10 +476,14 @@ function renderSmartScheduler() {
                   <td>${course.hours}</td>
                   <td>${rt.label}</td>
                   <td>
-                    <select class="inline-select">
-                      ${course.instructors.map(instr => `<option value="${instr}">${instr}</option>`).join('')}
-                    </select>
-                  </td>
+                      ${isNoInstructorRequiredCourse(course) ? `
+                        <span style="color:#666;">-</span>
+                      ` : `
+                        <select class="inline-select">
+                          ${course.instructors.map(instr => `<option value="${instr}">${instr}</option>`).join('')}
+                        </select>
+                      `}
+                </td>
                   <td>
                     <button class="btn btn-danger" onclick="handleRemoveCourse('${course.id}')">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -882,7 +900,13 @@ async function handleAddCourse(courseId) {
     if (!course) { console.log('Course not found in REMAINING_COURSES'); return; }
 
     const selectedNames = state.selectedInstructors[courseId] || [];
-    if (selectedNames.length === 0) { alert('Please select at least one instructor first'); return; }
+    const noInstructorRequiredCourses = [
+        'Graduation Project 1',
+        'Graduation Project 2',
+        'Practical Training'
+    ];
+    const noInstructorsRequired = noInstructorRequiredCourses.some(name => course.name.toLowerCase().includes(name.toLowerCase()));
+    if (!noInstructorsRequired && selectedNames.length === 0) { alert('Please select at least one instructor first'); return; }
     if (state.selectedCourses.find(c => c.id === courseId)) { alert('Course already added'); return; }
 
     // Get instructor IDs for the selected names
