@@ -93,7 +93,24 @@ namespace SmartSchedulingSystem.Services
                 || course.CId == "11494"
                 || course.CId == "11391";
         }
+        private static string FormatDays(Section s)
+        {
+            var dayOrder = new Dictionary<string, int>
+                {
+                    { "Sun", 1 },
+                    { "Mon", 2 },
+                    { "Tue", 3 },
+                    { "Wed", 4 },
+                    { "Thu", 5 }
+                };
 
+            return string.Join("/",
+                s.DayGroupSections
+                    .Select(d => d.Day)
+                    .Distinct()
+                    .OrderBy(d => dayOrder.GetValueOrDefault(d, 99))
+            );
+        }
 
         // ── 1. Remaining courses ─────────────────────────────
         // Reads from STUDENT_REMAINING_COURSE (per-student list) minus
@@ -151,9 +168,10 @@ namespace SmartSchedulingSystem.Services
             int filterId = await NextVal("SEQ_FILTER");
 
             await _db.Database.ExecuteSqlRawAsync(
-                "INSERT INTO FILTER (F_ID, ST_ID, S_TIME, F_TIME, MIN_BREAK, MAX_BREAK) " +
-                "VALUES ({0}, {1}, {2}, {3}, {4}, {5})",
-                filterId, studentId, req.StartTime, req.EndTime, req.MinBreak, req.MaxBreak);
+            "INSERT INTO FILTER (F_ID, ST_ID, S_TIME, F_TIME, MIN_BREAK, MAX_BREAK, CREDIT_HOURS) " +
+            "VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6})",
+            filterId, studentId, req.StartTime, req.EndTime,
+            req.MinBreak, req.MaxBreak, req.CreditHours);
 
             // Save preferred days
             foreach (var day in req.Days)
@@ -181,6 +199,7 @@ namespace SmartSchedulingSystem.Services
                 MinBreak = req.MinBreak,
                 MaxBreak = req.MaxBreak,
                 Days = req.Days,
+                CreditHours = req.CreditHours,
             };
         }
 
@@ -203,6 +222,7 @@ namespace SmartSchedulingSystem.Services
             var allowedDays = filter.DayGroupFilters.Select(d => d.Day).ToHashSet();
             var filterStart = TimeOnly.Parse(filter.STime);
             var filterEnd = TimeOnly.Parse(filter.FTime);
+            var maxCreditHours = filter.CreditHours;
 
             var prefs = await _db.InstructorsAdded
                 .Where(ia => ia.StId == studentId)
@@ -302,7 +322,10 @@ namespace SmartSchedulingSystem.Services
             {
                 
                 int schedId = await NextVal("SEQ_GENERATED_SCHED");
+                var totalHours = combo.Sum(s => s.Course.CHrs) + alwaysIncludedCourses.Sum(c => c.CHrs);
 
+                if (totalHours > maxCreditHours)
+                    continue;
                 await _db.Database.ExecuteSqlRawAsync(
                     "INSERT INTO GENERATED_SCHEDULE (SCHED_ID, F_ID, CREATION_DATE) " +
                     "VALUES ({0}, {1}, SYSDATE)",
@@ -665,7 +688,7 @@ namespace SmartSchedulingSystem.Services
                     InstructorName = s.Instructor.IName,
                     StartTime = s.STime,
                     EndTime = s.FTime,
-                    Days = string.Join("/", s.DayGroupSections.Select(d => d.Day)),
+                    Days = FormatDays(s),
                     Hours = s.Course.CHrs,
                 }).ToList()
             };

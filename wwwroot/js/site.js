@@ -106,7 +106,7 @@ async function apiSaveFilter({ startTime, endTime, minBreak, maxBreak, days, cou
         method: 'POST',
         body: JSON.stringify({
             StartTime: startTime, EndTime: endTime,
-            MinBreak: minBreak, MaxBreak: maxBreak,
+            MinBreak: minBreak, MaxBreak: maxBreak,CreditHours: state.creditHours,
             Days: days, CourseInstructors: courseInstructors,
         }),
     });
@@ -978,7 +978,39 @@ function goToNextSchedule() {
 }
 
 function handleExportToPDF(scheduleId) {
-    alert('Exporting Schedule ' + scheduleId + ' to PDF…\nThis would generate a PDF of the selected schedule.');
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const schedule = state.generatedSchedules.find(s => s.id === scheduleId);
+
+    if (!schedule) {
+        alert("Schedule not found");
+        return;
+    }
+
+    // Title
+    doc.setFontSize(16);
+    doc.text(`Schedule ${scheduleId}`, 14, 15);
+
+    // Table data
+    const rows = schedule.courses.map(c => [
+        c.courseNumber,
+        c.name,
+        c.section,
+        c.instructor,
+        c.day,
+        c.time
+    ]);
+
+    doc.autoTable({
+        head: [['Course', 'Title', 'Section', 'Instructor', 'Day', 'Time']],
+        body: rows,
+        startY: 20,
+    });
+
+    // Total hours
+    doc.text(`Total Hours: ${schedule.totalHours}`, 14, doc.lastAutoTable.finalY + 10);
+
+    doc.save(`schedule_${scheduleId}.pdf`);
 }
 
 // ============================================================

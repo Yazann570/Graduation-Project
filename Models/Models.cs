@@ -139,6 +139,9 @@ namespace SmartSchedulingSystem.Models
         [Column("MIN_BREAK")] public int MinBreak { get; set; } = 0;
         [Column("MAX_BREAK")] public int MaxBreak { get; set; } = 120;
 
+        [Column("CREDIT_HOURS")]
+        public int CreditHours { get; set; } = 15;
+
         public Student Student { get; set; } = null!;
         public ICollection<DayGroupFilter> DayGroupFilters { get; set; } = new List<DayGroupFilter>();
         public ICollection<GeneratedSchedule> GeneratedSchedules { get; set; } = new List<GeneratedSchedule>();
@@ -265,6 +268,7 @@ namespace SmartSchedulingSystem.Models
         [Required] public string EndTime { get; set; } = "17:00";
         public int MinBreak { get; set; } = 0;
         public int MaxBreak { get; set; } = 120;
+        public int CreditHours { get; set; } = 15;
         [Required] public List<string> Days { get; set; } = new();
         [Required] public Dictionary<string, List<int>> CourseInstructors { get; set; } = new();
     }
@@ -276,6 +280,8 @@ namespace SmartSchedulingSystem.Models
         public string EndTime { get; set; } = null!;
         public int MinBreak { get; set; }
         public int MaxBreak { get; set; }
+
+        public int CreditHours { get; set; }
         public List<string> Days { get; set; } = new();
     }
 
