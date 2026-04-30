@@ -91,7 +91,7 @@ namespace SmartSchedulingSystem.Models
         [Column("F_TIME")][MaxLength(5)] public string FTime { get; set; } = null!;  // "09:00"
         [Column("C_ID")][MaxLength(20)] public string CId { get; set; } = null!;
         [Column("I_ID")] public int IId { get; set; }
-
+        [Column("SECTION_NO")] public int? SectionNo { get; set; }
         public Course Course { get; set; } = null!;
         public Instructor Instructor { get; set; } = null!;
         public ICollection<DayGroupSection> DayGroupSections { get; set; } = new List<DayGroupSection>();

@@ -30,6 +30,9 @@ namespace SmartSchedulingSystem.Data
                 .HasOne(s => s.Course).WithMany(c => c.Sections).HasForeignKey(s => s.CId);
             mb.Entity<Section>()
                 .HasOne(s => s.Instructor).WithMany(i => i.Sections).HasForeignKey(s => s.IId);
+            mb.Entity<Section>()
+            .Property(s => s.SectionNo)
+            .HasColumnName("SECTION_NO");
 
             // ── DayGroupSection ───────────────────────────────
             mb.Entity<DayGroupSection>().HasKey(d => new { d.SecId, d.Day });

@@ -684,7 +684,7 @@ namespace SmartSchedulingSystem.Services
                     CourseName = s.Course.CName,
                     CType = s.Course.CType,
                     RequirementLabel = RequirementLabels.GetValueOrDefault(s.Course.CType, s.Course.CType),
-                    SectionNum = i + 1,
+                    SectionNum = s.SectionNo ?? 0,
                     InstructorName = s.Instructor.IName,
                     StartTime = s.STime,
                     EndTime = s.FTime,
