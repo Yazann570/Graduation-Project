@@ -981,18 +981,42 @@ function goToNextSchedule() {
 function handleExportToPDF(scheduleId) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    const schedule = state.generatedSchedules.find(s => s.id === scheduleId);
+
+    const id = String(scheduleId);
+
+    const schedule =
+        state.generatedSchedules.find(s => String(s.id) === id) ||
+        state.persistedFavourites.find(s => String(s.id) === id);
 
     if (!schedule) {
         alert("Schedule not found");
         return;
     }
 
-    // Title
-    doc.setFontSize(16);
-    doc.text(`Schedule ${scheduleId}`, 14, 15);
+    // ===== Page colors =====
+    doc.setFillColor(0, 31, 63); // dark blue
+    doc.rect(0, 0, 210, 28, "F");
 
-    // Table data
+    // ===== Logo =====
+    // Put logo.png inside your wwwroot/images folder
+    // Path example: /images/logo.png
+    doc.addImage("/images/psutIcon.png", "PNG", 14, 6, 18, 18);
+
+    // ===== Header title =====
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.text("Smart Scheduling System", 38, 14);
+
+    doc.setFontSize(10);
+    doc.text(`Generated Schedule #${id}`, 38, 21);
+
+    // ===== Info section =====
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    doc.text(`Total Credit Hours: ${schedule.totalHours}`, 14, 40);
+    doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 14, 48);
+
+    // ===== Table data =====
     const rows = schedule.courses.map(c => [
         c.courseNumber,
         c.name,
@@ -1003,15 +1027,42 @@ function handleExportToPDF(scheduleId) {
     ]);
 
     doc.autoTable({
-        head: [['Course', 'Title', 'Section', 'Instructor', 'Day', 'Time']],
+        startY: 58,
+        head: [['Course No.', 'Course Title', 'Section', 'Instructor', 'Day', 'Time']],
         body: rows,
-        startY: 20,
+
+        theme: 'grid',
+
+        headStyles: {
+            fillColor: [0, 31, 63],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center'
+        },
+
+        bodyStyles: {
+            fontSize: 9,
+            cellPadding: 3
+        },
+
+        alternateRowStyles: {
+            fillColor: [245, 247, 250]
+        },
+
+        styles: {
+            lineColor: [220, 220, 220],
+            lineWidth: 0.2
+        }
     });
 
-    // Total hours
-    doc.text(`Total Hours: ${schedule.totalHours}`, 14, doc.lastAutoTable.finalY + 10);
+    // ===== Footer =====
+    const pageHeight = doc.internal.pageSize.height;
+    doc.setFontSize(9);
+    doc.setTextColor(120, 120, 120);
+    doc.text("Smart Scheduling System", 14, pageHeight - 10);
+    doc.text(`Page 1`, 180, pageHeight - 10);
 
-    doc.save(`schedule_${scheduleId}.pdf`);
+    doc.save(`schedule_${id}.pdf`);
 }
 
 // ============================================================
@@ -1116,8 +1167,14 @@ async function generateSchedules() {
 
         showLoading('Generating schedules…');
 
+        console.time("TOTAL generateSchedules");
+
+        console.time("API generate request");
+
         // Step 2 — run the algorithm
         const schedules = await apiGenerateSchedules(filter.FId);
+
+        console.timeEnd("API generate request");
         console.log(schedules);
         if (schedules.length === 0) {
             state.generatedSchedules = [];
@@ -1140,7 +1197,14 @@ async function generateSchedules() {
     }
 
     hideLoading();
+
+    console.time("HTML render");
+
     render();
+
+    console.timeEnd("HTML render");
+
+    console.timeEnd("TOTAL generateSchedules");
 }
 
 // ============================================================

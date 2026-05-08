@@ -30,6 +30,11 @@ builder.Services.AddControllersWithViews()
         opt.JsonSerializerOptions.PropertyNamingPolicy = null);
 
 // ─────────────────────────────────────────────────────────────
+
+// ── Gemini API ─────────────────────────────────────────────────
+builder.Services.AddScoped<GeminiScheduleRanker>();
+// ─────────────────────────────────────────────────────────────
+
 var app = builder.Build();
 
 // ── Global JSON error handler ─────────────────────────────────
