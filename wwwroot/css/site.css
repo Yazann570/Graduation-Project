@@ -6,8 +6,8 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background: #fff;
+    font-family: Tahoma, Arial, sans-serif;
+    background: #eeeeee;
     color: #333;
     font-size: 14px;
 }
@@ -54,98 +54,105 @@ th, td {
 /* ===== HEADER ===== */
 #header {
     width: 100%;
-    background: #fff;
-    border-bottom: 1px solid #e0e0e0;
+    height: 105px;
+    background: #f4f4f4;
+    border-bottom: 1px solid #ccc;
 }
 
 #header-inner {
+    height: 105px;
+    background: #f4f4f4;
     display: flex;
     align-items: center;
-    padding: 0 24px;
-    height: 90px;
-    background: linear-gradient(135deg, #002C40 0%, #09618a 40%, #0a8abf 70%, #1aa3cc 100%);
+    justify-content: space-between;
+    padding: 0 26px 0 38px;
 }
 
-#header-logo-area {
+.main-logo {
+    width: 230px;
+    height: auto;
+    object-fit: contain;
+}
+
+.header-actions {
     display: flex;
     align-items: center;
-    gap: 18px;
+    gap: 12px;
+    align-self: flex-end;
+    margin-bottom: 18px;
 }
 
-#header-emblem {
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
+.header-home {
+    background: transparent;
+    color: #09618a;
+    font-size: 30px;
+    line-height: 1;
+    padding: 0;
 }
 
-#header-text {
+.header-signout {
+    background: #09618a;
     color: #fff;
+    border: none;
+    border-radius: 3px;
+    padding: 8px 18px;
+    font-size: 14px;
+    cursor: pointer;
+   
 }
-
-    #header-text .univ-name-ar {
-        font-size: 18px;
-        font-weight: bold;
-        letter-spacing: 0.5px;
-    }
-
-    #header-text .univ-name-en {
-        font-size: 13px;
-        opacity: 0.88;
-        margin-top: 2px;
-    }
-
-    #header-text .portal-label {
-        font-size: 11px;
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(255,255,255,0.3);
-        border-radius: 12px;
-        padding: 2px 10px;
-        display: inline-block;
-        margin-top: 4px;
+.home-icon {
+    font-size: 16px;
+    color: #fff;
+    line-height: 1;
+    padding: 5px 5px;
+}
+    .header-signout:hover {
+        background: #004D70;
     }
 
 /* ===== SIDEBAR ===== */
 #sidebar {
     display: table-cell;
     background: #002C40;
-    width: 250px;
+    width: 205px;
     vertical-align: top;
-    min-height: calc(100vh - 90px);
+    min-height: calc(100vh - 105px);
 }
 
 #sidebar-inner {
-    padding: 16px;
+    padding: 0;
 }
 
 .sidebar-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    color: #fff;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    gap: 10px;
     width: 100%;
+    min-height: 50px;
+    padding: 0 12px;
+    background: #002C40;
+    color: #fff;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.38);
     text-align: left;
-    font-size: 13px;
-    transition: background 0.15s;
-    cursor: pointer;
+    font-size: 14px;
+    font-weight: 250;
 }
 
     .sidebar-item:hover {
-        background: rgba(255,255,255,0.1);
+        background: #004D70;
     }
 
     .sidebar-item.active {
-        background: rgba(255,255,255,0.2);
+        background: #0b6f91;
     }
 
     .sidebar-item svg {
-        width: 18px;
-        height: 18px;
-        flex-shrink: 0;
+        width: 27px;
+        height: 27px;
+        color: #fff;
         opacity: 0.9;
+        flex-shrink: 0;
     }
 
 /* ===== MAIN CONTENT ===== */
@@ -182,32 +189,42 @@ th, td {
 }
 
 /* ===== TABLES ===== */
+/* ===== TABLES (Portal Style) ===== */
 .table-wrapper {
-    overflow-x: auto;
-    overflow-y: auto;
+    border: 0;
+    border-radius: 0;
+    border-top: 2px solid #D31522;
+    border-bottom: 2px solid #D31522;
+    margin-bottom: 10px;
     max-height: 500px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    overflow: auto;
 }
 
-table thead tr {
-    background: #6c757d;
+table {
+    border-collapse: separate;
+    border-spacing: 4px;
+    width: 100%;
 }
 
-table thead th {
-    padding: 12px 16px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-}
+    table thead th {
+        background: #666;
+        color: #fff;
+        padding: 5px 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+        font-family: Tahoma, Arial, sans-serif;
+    }
 
-table tbody td {
-    padding: 12px 16px;
-    font-size: 13px;
-    border-bottom: 1px solid #f0f0f0;
-}
+    table tbody td {
+        padding: 7px 6px;
+        font-size: 14px;
+        text-align: center;
+        border: none;
+        color: #01618F;
+        font-family: Tahoma, Arial, sans-serif;
+    }
+    /* ===== TABLES (Portal Style) ===== */
 
 table tbody tr:last-child td {
     border-bottom: none;
@@ -223,23 +240,23 @@ table tbody tr:last-child td {
 
 /* Requirement type row colors */
 .req-compulsory-program {
-    background-color: rgba(0,71,171,0.25) !important;
+    background-color: rgba(0,71,171,0.18) !important;
 }
 
 .req-compulsory-school {
-    background-color: rgba(0,100,0,0.15) !important;
+    background-color: rgba(0,100,0,0.11) !important;
 }
 
 .req-compulsory-university {
-    background-color: rgba(139,0,0,0.15) !important;
+    background-color: rgba(139,0,0,0.10) !important;
 }
 
 .req-elective-university {
-    background-color: rgba(212,165,116,0.2) !important;
+    background-color: rgba(212,165,116,0.15) !important;
 }
 
 .req-elective-program {
-    background-color: rgba(0,206,209,0.2) !important;
+    background-color: rgba(0,206,209,0.14) !important;
 }
 
 /* ===== DROPDOWN ===== */
@@ -261,6 +278,7 @@ table tbody tr:last-child td {
     min-width: 200px;
     justify-content: space-between;
     cursor: pointer;
+    width: 170px;
 }
 
     .dropdown-trigger:hover {
@@ -324,11 +342,12 @@ table tbody tr:last-child td {
     align-items: center;
     gap: 6px;
     padding: 8px 16px;
-    border-radius: 4px;
+    border-radius: 3px;
     border: none;
     font-size: 13px;
     cursor: pointer;
     transition: opacity 0.15s;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
     .btn:hover {
@@ -338,21 +357,29 @@ table tbody tr:last-child td {
 .btn-primary {
     background: #09618a;
     color: #fff;
+
 }
 
 .btn-danger {
     background: #dc2626;
     color: #fff;
+    font-family: Tahoma, Arial, sans-serif;
+    font-size: 13px;
+    border-radius: 3px;
 }
+
 
 .btn-yellow {
     background: #f59e0b;
     color: #fff;
+    font-family: Tahoma, Arial, sans-serif;
+    border-radius: 3px;
 }
 
 .btn-large {
-    padding: 12px 24px;
+    padding: 9px 20px;
     font-size: 14px;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .btn svg {
@@ -372,128 +399,138 @@ table tbody tr:last-child td {
 
 /* ===== FILTERS BOX ===== */
 .filters-box {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 32px;
+    background: #fafafa;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    border-top: 2px solid #D31522;
+    padding: 14px 18px 18px;
+    margin-bottom: 28px;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
+    .filters-box .section-title {
+        font-size: 18px;
+        color: #004D70;
+        font-weight: normal;
+        margin-bottom: 14px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #ccc;
+    }
+
 .filters-row {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
+}
+
+.subsection-title {
+    font-size: 15px;
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 8px;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .days-grid {
     display: flex;
-    gap: 24px;
+    gap: 22px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
     .days-grid label {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 13px;
+        gap: 7px;
+        font-size: 14px;
+        color: #333;
         cursor: pointer;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
     .days-grid input[type="checkbox"] {
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         accent-color: #09618a;
     }
 
-.time-row {
+.time-row,
+.break-row,
+.credit-row {
     display: flex;
-    gap: 24px;
     align-items: center;
+    gap: 16px;
     flex-wrap: wrap;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
-    .time-row .field {
+    .time-row .field,
+    .break-row .field {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 7px;
     }
 
-    .time-row label, .break-row label {
-        font-size: 13px;
+    .time-row label,
+    .break-row label,
+    .credit-row span {
+        font-size: 14px;
         color: #555;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
     .time-row input[type="time"],
     .break-row input[type="number"],
     .credit-input {
-        padding: 8px 12px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 13px;
-    }
-
-.break-row {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    flex-wrap: wrap;
-    margin-top: 8px;
-}
-
-    .break-row .field {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        height: 32px;
+        padding: 5px 8px;
+        border: 1px solid #aaa;
+        border-radius: 0;
+        background: #fff;
+        color: #333;
+        font-size: 14px;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
     .break-row input[type="number"] {
-        width: 80px;
+        width: 75px;
     }
 
-.credit-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-top: 8px;
-}
-
 .credit-input {
-    width: 96px;
-}
-
-.credit-row span {
-    font-size: 13px;
-    color: #555;
+    width: 90px;
 }
 
 /* ===== GENERATED SCHEDULES ===== */
 .schedule-box {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 32px;
+    background: #fafafa;
+    border: 1px solid #ccc;
+    border-radius: 0;
+    border-top: 2px solid #D31522;
+    padding: 16px 18px 18px;
+    margin-bottom: 28px;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .schedule-nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
 }
 
 .schedule-nav-center {
     text-align: center;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
     .schedule-nav-center h3 {
         font-size: 18px;
-        color: #09618a;
+        color: #004D70;
         font-weight: normal;
         margin-bottom: 4px;
     }
 
     .schedule-nav-center p {
         font-size: 13px;
-        color: #666;
+        color: #555;
     }
 
 .schedule-actions {
@@ -505,38 +542,66 @@ table tbody tr:last-child td {
 
 /* ===== FAVORITES ===== */
 .fav-card {
-    border: 2px solid #fbbf24;
-    border-radius: 8px;
-    padding: 24px;
+    background: #fafafa;
+    border: 1px solid #f0a000;
+    border-radius: 0;
+    padding: 16px 18px 18px;
     margin-bottom: 24px;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .fav-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     flex-wrap: wrap;
     gap: 12px;
+    
+    padding-bottom: 10px;
 }
 
 .fav-card-title {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
     .fav-card-title h3 {
-        font-size: 17px;
-        color: #09618a;
+        font-size: 16px;
+        color: #004D70;
         font-weight: normal;
+        margin: 0;
     }
 
-    .fav-card-title span.total-hrs {
-        font-size: 13px;
-        color: #666;
-        margin-left: 16px;
-    }
+.star-icon-filled {
+    fill: #fbbf24;
+    color: #fbbf24;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.fav-card-title span.total-hrs {
+    font-size: 13px;
+    color: #555;
+    margin-left: 10px;
+    padding: 3px 8px;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+.btn-remove-link {
+    background: none;
+    border: none;
+    color: #D31522;
+    font-size: 13px;
+    font-family: Tahoma, Arial, sans-serif;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+}
 
 .fav-card-actions {
     display: flex;
@@ -544,33 +609,13 @@ table tbody tr:last-child td {
     gap: 12px;
 }
 
-.star-icon-filled {
-    fill: #fbbf24;
-    color: #fbbf24;
-    width: 22px;
-    height: 22px;
-}
-
-.btn-remove-link {
-    background: none;
-    border: none;
-    color: #dc2626;
-    font-size: 13px;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
-    .btn-remove-link:hover {
-        color: #b91c1c;
-    }
-
 /* ===== IMPORTANT NOTE ===== */
 .important-note {
     margin-top: 16px;
-    padding: 16px;
+    padding: 14px 16px;
     background: #eff6ff;
     border-left: 4px solid #09618a;
-    border-radius: 4px;
+    border-radius: 3px;
     display: flex;
     gap: 12px;
     align-items: flex-start;
@@ -588,41 +633,50 @@ table tbody tr:last-child td {
         font-size: 13px;
         color: #002C40;
         line-height: 1.6;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
 /* ===== NO SCHEDULES ===== */
 .no-schedules {
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 48px 32px;
-    background: #f9fafb;
+    border: 1px solid #ccc;
+    border-top: 2px solid #D31522;
+    border-radius: 0;
+    padding: 55px 40px;
+    background: #FAFAFA;
     text-align: center;
     margin-bottom: 32px;
+    font-family: Tahoma, Arial, sans-serif;
+
 }
 
     .no-schedules svg {
-        width: 80px;
-        height: 80px;
+        width: 54px;
+        height: 54px;
         color: #09618a;
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
     .no-schedules h2 {
-        font-size: 24px;
-        color: #09618a;
-        margin-bottom: 12px;
+        font-size: 20px;
+        color: #004D70;
+        margin-bottom: 10px;
         font-weight: normal;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
     .no-schedules p {
         color: #555;
-        font-size: 15px;
-        margin-bottom: 8px;
+        font-size: 14px;
+        margin-bottom: 7px;
+        font-family: Tahoma, Arial, sans-serif;
     }
 
     .no-schedules .italic {
         color: #777;
+        font-size: 13px;
         font-style: italic;
+        border-top: 1px dashed #ddd;
+        padding-top: 10px;
     }
 
 /* ===== CURRENT SCHEDULE ===== */
@@ -691,12 +745,14 @@ table tbody tr:last-child td {
 }
 
 .inline-select {
-    padding: 4px 8px;
+    width: 170px;
+    padding: 5px 8px;
     border: 1px solid #ccc;
-    border-radius: 4px;
+    border-radius: 3px;
     font-size: 13px;
     background: #fff;
     color: #333;
+    font-family: Tahoma, Arial, sans-serif;
 }
 
 .hidden {
@@ -725,6 +781,7 @@ table tbody tr:last-child td {
     border-radius: 50%;
     animation: spin 0.7s linear infinite;
 }
+
 
 @keyframes spin {
     to {
