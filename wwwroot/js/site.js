@@ -977,6 +977,7 @@ function goToNextSchedule() {
     }
 }
 
+// ===== EXPORT SCHEDULE TO PDF =====
 function handleExportToPDF(scheduleId) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
