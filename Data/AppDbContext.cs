@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Reflection.Emit;
+using Microsoft.EntityFrameworkCore;
 using SmartSchedulingSystem.Models;
 
 namespace SmartSchedulingSystem.Data
@@ -20,7 +21,7 @@ namespace SmartSchedulingSystem.Data
         public DbSet<GeneratedSchedule> GeneratedSchedules { get; set; }
         public DbSet<GeneratedSection> GeneratedSections { get; set; }
         public DbSet<Favourite> Favourites { get; set; }
-
+        public DbSet<StudentGrade> StudentGrades { get; set; }
         protected override void OnModelCreating(ModelBuilder mb)
         {
             base.OnModelCreating(mb);
@@ -33,6 +34,12 @@ namespace SmartSchedulingSystem.Data
             mb.Entity<Section>()
             .Property(s => s.SectionNo)
             .HasColumnName("SECTION_NO");
+
+            // ── StudentGrade ───────────────────────────────
+            mb.Entity<StudentGrade>()
+            .HasOne(x => x.Student)
+            .WithMany(x => x.StudentGrades)
+            .HasForeignKey(x => x.StId);
 
             // ── DayGroupSection ───────────────────────────────
             mb.Entity<DayGroupSection>().HasKey(d => new { d.SecId, d.Day });

@@ -22,11 +22,14 @@ namespace SmartSchedulingSystem.Models
         [Column("PHONE_NUM")]
         [MaxLength(20)]
         public string? PhoneNum { get; set; }
+        [Column("GPA")]
+        public decimal? Gpa { get; set; }
 
         public ICollection<StudentCourse> StudentCourses { get; set; } = new List<StudentCourse>();
         public ICollection<Filter> Filters { get; set; } = new List<Filter>();
         public ICollection<InstructorAdded> InstructorsAdded { get; set; } = new List<InstructorAdded>();
         public ICollection<StudentRemainingCourse> RemainingCourses { get; set; } = new List<StudentRemainingCourse>();
+        public ICollection<StudentGrade> StudentGrades { get; set; } = new List<StudentGrade>();
     }
 
     [Table("COURSE")]
@@ -96,6 +99,7 @@ namespace SmartSchedulingSystem.Models
         public Instructor Instructor { get; set; } = null!;
         public ICollection<DayGroupSection> DayGroupSections { get; set; } = new List<DayGroupSection>();
         public ICollection<GeneratedSection> GeneratedSections { get; set; } = new List<GeneratedSection>();
+
     }
 
     [Table("DAY_GROUP_SECTION")]
@@ -205,6 +209,41 @@ namespace SmartSchedulingSystem.Models
 
         public Filter Filter { get; set; } = null!;
         public GeneratedSchedule GeneratedSchedule { get; set; } = null!;
+    }
+
+    [Table("STUDENT_GRADE")]
+    public class StudentGrade
+    {
+        [Key]
+        [Column("GRADE_ID")]
+        public int GradeId { get; set; }
+        [Column("ST_ID")]
+        [MaxLength(20)]
+        public string StId { get; set; } = null!;
+
+        [Column("YEAR_ID")]
+        [MaxLength(10)]
+        public string? YearId { get; set; }
+
+        [Column("SEM_ID")]
+        [MaxLength(10)]
+        public string? SemId { get; set; }
+
+        [Column("CREDIT_HOURS")]
+        public int? CreditHours { get; set; }
+
+        [Column("COURSE_NAME")]
+        [MaxLength(200)]
+        public string CourseName { get; set; } = null!;
+
+        [Column("PASS_FLAG")]
+        [MaxLength(10)]
+        public string? PassFlag { get; set; }
+
+        [Column("COURSE_GPA")]
+        public decimal? CourseGpa { get; set; }
+
+        public Student Student { get; set; } = null!;
     }
 
     // ══════════════════════════════════════════════════════════

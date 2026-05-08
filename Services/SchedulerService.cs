@@ -238,17 +238,10 @@ namespace SmartSchedulingSystem.Services
                 .Where(c => selectedCourseIds.Contains(c.CId))
                 .ToListAsync();
 
-            var alwaysIncludedCourseIds = noInstructorCourseIds
-                .Where(IsNoInstructorRequiredCourse)
-                .Select(c => c.CId)
-                .ToList();
+            var schedulingCourseIds = selectedCourseIds;
 
-            var schedulingCourseIds = selectedCourseIds
-                .Except(alwaysIncludedCourseIds)
-                .ToList();
-
-            if (schedulingCourseIds.Count == 0 && alwaysIncludedCourseIds.Count == 0)
-                return new List<ScheduleResultDto>();
+            //if (schedulingCourseIds.Count == 0 && alwaysIncludedCourseIds.Count == 0)
+            //    return new List<ScheduleResultDto>();
 
             var allSections = await _db.Sections
                 .Include(s => s.Course)
@@ -291,12 +284,36 @@ namespace SmartSchedulingSystem.Services
 
             var results = new List<List<Section>>();
 
-            var alwaysIncludedCourses = await _db.Courses
-            .Where(c => alwaysIncludedCourseIds.Contains(c.CId))
-            .ToListAsync();
+            var availableCourseGroups = candidatesByCourse
+                .Select(kvp => new CourseGroup
+                {
+                    CourseId = kvp.Key,
+                    Sections = kvp.Value,
+                    CreditHours = kvp.Value.First().Course.CHrs
+                })
+                .ToList();
 
-            var courseList = candidatesByCourse.Values.ToList();
-            Backtrack(courseList, 0, new List<Section>(), filter, allowedDays, results, maxResults: 10);
+            var courseSubsets = GenerateCourseSubsets(
+                availableCourseGroups,
+                maxCreditHours
+            );
+
+            foreach (var subset in courseSubsets)
+            {
+                var courseList = subset
+                    .Select(x => x.Sections)
+                    .ToList();
+
+                Backtrack(
+                    courseList,
+                    0,
+                    new List<Section>(),
+                    filter,
+                    allowedDays,
+                    results,
+                    maxResults: 100
+                );
+            }
 
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
@@ -322,9 +339,8 @@ namespace SmartSchedulingSystem.Services
             {
                 
                 int schedId = await NextVal("SEQ_GENERATED_SCHED");
-                var totalHours = combo.Sum(s => s.Course.CHrs) + alwaysIncludedCourses.Sum(c => c.CHrs);
-
-                if (totalHours > maxCreditHours)
+                var totalHours = combo.Sum(s => s.Course.CHrs);
+                if (totalHours != maxCreditHours)
                     continue;
                 await _db.Database.ExecuteSqlRawAsync(
                     "INSERT INTO GENERATED_SCHEDULE (SCHED_ID, F_ID, CREATION_DATE) " +
@@ -340,24 +356,7 @@ namespace SmartSchedulingSystem.Services
                 { SchedId = schedId, FId = filterId, CreationDate = DateTime.UtcNow };
                 var dto = MapSchedule(sched, combo, isFav: false);
 
-                foreach (var c in alwaysIncludedCourses)
-                {
-                    dto.Courses.Add(new ScheduledCourseDto
-                    {
-                        CourseNumber = c.CId,
-                        CourseName = c.CName,
-                        CType = c.CType,
-                        RequirementLabel = RequirementLabels.GetValueOrDefault(c.CType, c.CType),
-                        SectionNum = 0,
-                        InstructorName = "-",
-                        StartTime = "—",
-                        EndTime = "—",
-                        Days = "—",
-                        Hours = c.CHrs
-                    });
-
-                    dto.TotalHours += c.CHrs;
-                }
+                
 
                 dtos.Add(dto);
             }
@@ -562,6 +561,47 @@ namespace SmartSchedulingSystem.Services
         }
 
         // ── Private helpers ──────────────────────────────────
+
+        private class CourseGroup
+        {
+            public string CourseId { get; set; } = null!;
+            public List<Section> Sections { get; set; } = new();
+            public int CreditHours { get; set; }
+        }
+
+        private static List<List<CourseGroup>> GenerateCourseSubsets(
+            List<CourseGroup> courses,
+            int maxCreditHours)
+        {
+            var results = new List<List<CourseGroup>>();
+
+            void BacktrackSubsets(int index, List<CourseGroup> current, int currentHours)
+            {
+                if (currentHours > maxCreditHours)
+                    return;
+
+                if (index == courses.Count)
+                {
+                    if (current.Count > 0 && currentHours == maxCreditHours)
+                        results.Add(new List<CourseGroup>(current));
+
+                    return;
+                }
+
+                BacktrackSubsets(index + 1, current, currentHours);
+
+                current.Add(courses[index]);
+                BacktrackSubsets(index + 1, current, currentHours + courses[index].CreditHours);
+                current.RemoveAt(current.Count - 1);
+            }
+
+            BacktrackSubsets(0, new List<CourseGroup>(), 0);
+
+            return results
+                .OrderByDescending(subset => subset.Sum(c => c.CreditHours))
+                .ToList();
+        }
+
         private static void Backtrack(
     List<List<Section>> byCourse, int idx,
     List<Section> current, Filter filter,
