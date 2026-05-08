@@ -350,6 +350,7 @@ namespace SmartSchedulingSystem.Models
         public string EndTime { get; set; } = null!;
         public string Days { get; set; } = null!;
         public int Hours { get; set; }
+        public string? IsOnline { get; set; }
     }
 
     public class ToggleFavouriteRequest

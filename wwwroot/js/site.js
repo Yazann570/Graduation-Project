@@ -3,7 +3,13 @@
 // ============================================================
 
 const API_BASE = '/api';
-
+function onlineLabel(code) {
+    code = String(code || '').trim().toUpperCase();
+    if (code === 'Y') return 'Online';
+    if (code === 'B') return 'Blended';
+    if (code === 'N') return 'No';
+    return 'No';
+}
 async function apiFetch(path, options = {}) {
     let res;
     try {
@@ -59,6 +65,7 @@ async function apiGetRemainingCourses() {
         name: c.CName,
         hours: c.CHrs,
         requirementType: typeMap[c.CType] || c.CType,
+        isOnline: c.IsOnline,
         availableInstructors: c.AvailableInstructors.map(i => i.IName),
         _instructorObjects: c.AvailableInstructors,
     }));
@@ -80,6 +87,7 @@ async function apiGetSelectedCourses() {
         name: c.CName,
         hours: c.CHrs,
         requirementType: typeMap[c.CType] || c.CType,
+        isOnline: c.IsOnline,
         // instructors = names of already-chosen instructors (for the selected table dropdown)
         instructors: c.SelectedInstructors.map(i => i.IName),
         availableInstructors: c.AvailableInstructors.map(i => i.IName),
@@ -140,6 +148,7 @@ async function apiGenerateSchedules(filterId) {
             instructor: c.InstructorName,
             day: c.Days,
             time: c.StartTime + '–' + c.EndTime,
+            isOnline: c.IsOnline,
         })),
     }));
 }
@@ -163,6 +172,7 @@ function mapFavouriteDto(f) {
             instructor: c.InstructorName,
             day: c.Days || '—',
             time: c.StartTime + '–' + c.EndTime,
+            isOnline: c.IsOnline,
         })),
     };
 }
@@ -388,7 +398,7 @@ function renderSmartScheduler() {
           <thead>
             <tr>
               <th>Course Number</th><th>Course Title</th><th>Course Hours</th>
-              <th>Requirement Type</th><th>Instructor</th><th>Action</th>
+              <th>Requirement Type</th><th>Online?</th><th>Instructor</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -402,6 +412,7 @@ function renderSmartScheduler() {
                   <td>${course.name}</td>
                   <td>${course.hours}</td>
                   <td>${rt.label}</td>
+                  <td>${onlineLabel(course.isOnline)}</td>
                   <td>
                       ${isNoInstructorRequiredCourse(course) ? `
                         <span style="color:#666;">-</span>
@@ -463,7 +474,7 @@ function renderSmartScheduler() {
           <thead>
             <tr>
               <th>Course Number</th><th>Course Title</th><th>Course Hours</th>
-              <th>Requirement Type</th><th>Instructors</th><th>Action</th>
+              <th>Requirement Type</th><th>Online?</th><th>Instructors</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -475,6 +486,7 @@ function renderSmartScheduler() {
                   <td>${course.name}</td>
                   <td>${course.hours}</td>
                   <td>${rt.label}</td>
+                  <td>${onlineLabel(course.isOnline)}</td>
                   <td>
                       ${isNoInstructorRequiredCourse(course) ? `
                         <span style="color:#666;">-</span>
@@ -632,7 +644,7 @@ function renderGeneratedSchedules() {
             <thead>
               <tr>
                 <th>Course Number</th><th>Course Title</th><th>Requirement Type</th>
-                <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th>
+                <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online?</th>
               </tr>
             </thead>
             <tbody>
@@ -645,6 +657,7 @@ function renderGeneratedSchedules() {
                   <td>${c.instructor}</td>
                   <td>${c.day}</td>
                   <td>${c.time}</td>
+                  <td>${onlineLabel(c.isOnline)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -717,7 +730,7 @@ function renderFavoriteSchedules() {
               <thead>
                 <tr>
                   <th>Course Number</th><th>Course Title</th><th>Requirement Type</th>
-                  <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th>
+                  <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online?</th>
                 </tr>
               </thead>
               <tbody>
@@ -730,6 +743,7 @@ function renderFavoriteSchedules() {
                     <td>${c.instructor}</td>
                     <td>${c.day || '—'}</td>
                     <td>${c.time}</td>
+                    <td>${onlineLabel(c.isOnline)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -978,9 +992,8 @@ function goToNextSchedule() {
 }
 
 // ===== EXPORT SCHEDULE TO PDF =====
-function handleExportToPDF(scheduleId) {
+async function handleExportToPDF(scheduleId) {
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
 
     const id = String(scheduleId);
 
@@ -993,76 +1006,75 @@ function handleExportToPDF(scheduleId) {
         return;
     }
 
-    // ===== Page colors =====
-    doc.setFillColor(0, 31, 63); // dark blue
-    doc.rect(0, 0, 210, 28, "F");
+    const exportDiv = document.createElement("div");
+    exportDiv.className = "pdf-export-container";
 
-    // ===== Logo =====
-    // Put logo.png inside your wwwroot/images folder
-    // Path example: /images/logo.png
-    doc.addImage("/images/psutIcon.png", "PNG", 14, 6, 18, 18);
+    exportDiv.innerHTML = `
+        <div class="pdf-header">
+            <img src="/images/psutIcon.png" class="pdf-logo" />
+            <div>
+                <h1>Smart Scheduling System</h1>
+                <p>Generated Schedule #${id}</p>
+            </div>
+        </div>
 
-    // ===== Header title =====
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.text("Smart Scheduling System", 38, 14);
+        <div class="pdf-info">
+            <p><strong>Total Credit Hours:</strong> ${schedule.totalHours}</p>
+            <p><strong>Export Date:</strong> ${new Date().toLocaleDateString()}</p>
+        </div>
 
-    doc.setFontSize(10);
-    doc.text(`Generated Schedule #${id}`, 38, 21);
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th>Course No.</th>
+                    <th>Course Title</th>
+                    <th>Section</th>
+                    <th>Instructor</th>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Online?</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${schedule.courses.map(c => `
+                    <tr>
+                        <td>${c.courseNumber}</td>
+                        <td>${c.name}</td>
+                        <td>${c.section}</td>
+                        <td>${c.instructor}</td>
+                        <td>${c.day}</td>
+                        <td>${c.time}</td>
+                        <td>${onlineLabel(c.isOnline)}</td>
+                    </tr>
+                `).join("")}
+            </tbody>
+        </table>
 
-    // ===== Info section =====
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.text(`Total Credit Hours: ${schedule.totalHours}`, 14, 40);
-    doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 14, 48);
+        <div class="pdf-footer">
+            Smart Scheduling System
+        </div>
+    `;
 
-    // ===== Table data =====
-    const rows = schedule.courses.map(c => [
-        c.courseNumber,
-        c.name,
-        c.section,
-        c.instructor,
-        c.day,
-        c.time
-    ]);
+    document.body.appendChild(exportDiv);
 
-    doc.autoTable({
-        startY: 58,
-        head: [['Course No.', 'Course Title', 'Section', 'Instructor', 'Day', 'Time']],
-        body: rows,
-
-        theme: 'grid',
-
-        headStyles: {
-            fillColor: [0, 31, 63],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            halign: 'center'
-        },
-
-        bodyStyles: {
-            fontSize: 9,
-            cellPadding: 3
-        },
-
-        alternateRowStyles: {
-            fillColor: [245, 247, 250]
-        },
-
-        styles: {
-            lineColor: [220, 220, 220],
-            lineWidth: 0.2
-        }
+    const canvas = await html2canvas(exportDiv, {
+        scale: 2,
+        useCORS: true
     });
 
-    // ===== Footer =====
-    const pageHeight = doc.internal.pageSize.height;
-    doc.setFontSize(9);
-    doc.setTextColor(120, 120, 120);
-    doc.text("Smart Scheduling System", 14, pageHeight - 10);
-    doc.text(`Page 1`, 180, pageHeight - 10);
+    const imgData = canvas.toDataURL("image/png");
 
-    doc.save(`schedule_${id}.pdf`);
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+
+    pdf.save(`schedule_${id}.pdf`);
+
+    document.body.removeChild(exportDiv);
 }
 
 // ============================================================

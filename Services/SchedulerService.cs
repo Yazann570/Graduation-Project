@@ -249,6 +249,10 @@ namespace SmartSchedulingSystem.Services
                 .Include(s => s.DayGroupSections)
                 .Where(s => schedulingCourseIds.Contains(s.CId))
                 .ToListAsync();
+            foreach (var s in allSections)
+            {
+                Console.WriteLine($"Course: {s.Course.CName}, IsOnline: [{s.Course.IsOnline}]");
+            }
             foreach (var c in noInstructorCourseIds)
             {
                 Console.WriteLine($"Course ID: {c.CId}, Course Name: {c.CName}");
@@ -314,7 +318,7 @@ namespace SmartSchedulingSystem.Services
                     maxResults: 100
                 );
             }
-
+            
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
             // Delete old data in FK-safe order: FAVOURITE → GENERATED_SECTION → GENERATED_SCHEDULE
@@ -337,6 +341,7 @@ namespace SmartSchedulingSystem.Services
             var dtos = new List<ScheduleResultDto>();
             foreach (var combo in results)
             {
+
                 
                 int schedId = await NextVal("SEQ_GENERATED_SCHED");
                 var totalHours = combo.Sum(s => s.Course.CHrs);
@@ -573,6 +578,7 @@ namespace SmartSchedulingSystem.Services
             List<CourseGroup> courses,
             int maxCreditHours)
         {
+
             var results = new List<List<CourseGroup>>();
 
             void BacktrackSubsets(int index, List<CourseGroup> current, int currentHours)
@@ -669,6 +675,7 @@ namespace SmartSchedulingSystem.Services
                     var secStart = TimeOnly.Parse(sec.STime);
                     var secEnd = TimeOnly.Parse(sec.FTime);
                     if (candStart < secEnd && candEnd > secStart) return true;
+                    Console.WriteLine(sec.Course.IsOnline.ToString());
                 }
             }
 
@@ -730,7 +737,10 @@ namespace SmartSchedulingSystem.Services
                     EndTime = s.FTime,
                     Days = FormatDays(s),
                     Hours = s.Course.CHrs,
-                }).ToList()
+                    IsOnline = s.Course.IsOnline,
+                }).ToList(),
+
             };
+            
     }
 }
