@@ -398,7 +398,7 @@ function renderSmartScheduler() {
           <thead>
             <tr>
               <th>Course Number</th><th>Course Title</th><th>Course Hours</th>
-              <th>Requirement Type</th><th>Online?</th><th>Instructor</th><th>Action</th>
+              <th>Requirement Type</th><th>Online</th><th>Instructor</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -474,7 +474,7 @@ function renderSmartScheduler() {
           <thead>
             <tr>
               <th>Course Number</th><th>Course Title</th><th>Course Hours</th>
-              <th>Requirement Type</th><th>Online?</th><th>Instructors</th><th>Action</th>
+              <th>Requirement Type</th><th>Online</th><th>Instructors</th><th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -644,7 +644,7 @@ function renderGeneratedSchedules() {
             <thead>
               <tr>
                 <th>Course Number</th><th>Course Title</th><th>Requirement Type</th>
-                <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online?</th>
+                <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online</th>
               </tr>
             </thead>
             <tbody>
@@ -730,7 +730,7 @@ function renderFavoriteSchedules() {
               <thead>
                 <tr>
                   <th>Course Number</th><th>Course Title</th><th>Requirement Type</th>
-                  <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online?</th>
+                  <th>Section</th><th>Instructor</th><th>Day</th><th>Time</th><th>Online</th>
                 </tr>
               </thead>
               <tbody>
@@ -991,25 +991,25 @@ function goToNextSchedule() {
     }
 }
 
-// ===== EXPORT SCHEDULE TO PDF =====
-async function handleExportToPDF(scheduleId) {
-    const { jsPDF } = window.jspdf;
+//===== EXPORT SCHEDULE TO PDF =====
+    async function handleExportToPDF(scheduleId) {
+        const { jsPDF } = window.jspdf;
 
-    const id = String(scheduleId);
+        const id = String(scheduleId);
 
-    const schedule =
-        state.generatedSchedules.find(s => String(s.id) === id) ||
-        state.persistedFavourites.find(s => String(s.id) === id);
+        const schedule =
+            state.generatedSchedules.find(s => String(s.id) === id) ||
+            state.persistedFavourites.find(s => String(s.id) === id);
 
-    if (!schedule) {
-        alert("Schedule not found");
-        return;
-    }
+        if (!schedule) {
+            alert("Schedule not found");
+            return;
+        }
 
-    const exportDiv = document.createElement("div");
-    exportDiv.className = "pdf-export-container";
+        const exportDiv = document.createElement("div");
+        exportDiv.className = "pdf-export-container";
 
-    exportDiv.innerHTML = `
+        exportDiv.innerHTML = `
         <div class="pdf-header">
             <img src="/images/psutIcon.png" class="pdf-logo" />
             <div>
@@ -1032,7 +1032,7 @@ async function handleExportToPDF(scheduleId) {
                     <th>Instructor</th>
                     <th>Day</th>
                     <th>Time</th>
-                    <th>Online?</th>
+                    <th>Online</th>
                 </tr>
             </thead>
             <tbody>
@@ -1055,27 +1055,27 @@ async function handleExportToPDF(scheduleId) {
         </div>
     `;
 
-    document.body.appendChild(exportDiv);
+        document.body.appendChild(exportDiv);
 
-    const canvas = await html2canvas(exportDiv, {
-        scale: 2,
-        useCORS: true
-    });
+        const canvas = await html2canvas(exportDiv, {
+            scale: 2,
+            useCORS: true
+        });
 
-    const imgData = canvas.toDataURL("image/png");
+        const imgData = canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF("p", "mm", "a4");
+        const pdf = new jsPDF("p", "mm", "a4");
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgWidth = pageWidth;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
 
-    pdf.save(`schedule_${id}.pdf`);
+        pdf.save(`schedule_${id}.pdf`);
 
-    document.body.removeChild(exportDiv);
-}
+        document.body.removeChild(exportDiv);
+    }
 
 // ============================================================
 //  DEBUG: SAVED FILTERS TABLE
