@@ -695,7 +695,7 @@ namespace SmartSchedulingSystem.Services
         }
         private static bool isGradProj(Section s)
         {
-            return s.CId == "11494" || s.CId == "11493";
+            return s.CId == "11494" || s.CId == "11493" || s.CId == "11391";
         }
         // Validates break constraints over a COMPLETE schedule combination.
         // Called only when all courses have been placed.
