@@ -865,14 +865,14 @@ table tbody tr:last-child td {
     }
 
 /* PDF Table */
-.pdf-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 4px;
-    border-top: 2px solid #D31522;
-    border-bottom: 2px solid #D31522;
-    font-size: 12px;
-}
+    .pdf-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 4px;
+        border-top: 2px solid #D31522;
+        border-bottom: 2px solid #D31522;
+        font-size: 12px;
+    }
 
     /* Table Header */
     .pdf-table th {
@@ -911,4 +911,515 @@ table tbody tr:last-child td {
 /* Footer */
 .pdf-footer {
     display: none;
+}
+
+
+/* ===== LOGIN RESPONSIVE FIX ===== */
+
+.login-topbar {
+    width: 100%;
+    overflow: hidden;
+}
+
+.topbar-left {
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+.login-wrap {
+    width: 100%;
+    min-height: 100vh;
+    padding: 90px 16px 130px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 520px;
+}
+
+    .login-card img {
+        max-width: 100%;
+        height: auto !important;
+    }
+
+/* Tablets */
+@media (max-width: 768px) {
+    .login-topbar {
+        height: auto;
+        min-height: 66px;
+        padding: 8px 12px;
+    }
+
+    .topbar-left {
+        gap: 16px;
+        flex-wrap: wrap;
+        justify-content: center;
+        font-size: 13px;
+    }
+
+    .topbar-logo {
+        height: 70px !important;
+        width: 70px !important;
+    }
+
+    .login-wrap {
+        align-items: flex-start;
+        padding-top: 110px;
+    }
+
+    .login-card {
+        max-width: 480px;
+        padding: 24px 22px 30px;
+    }
+}
+
+/* Phones */
+@media (max-width: 480px) {
+    body::after {
+        height: 65px;
+    }
+
+    .login-wrap::before {
+        bottom: 65px;
+        height: 70px;
+        background-size: auto 70px;
+    }
+
+    .login-wrap::after {
+        bottom: 35px;
+        font-size: 10px;
+    }
+
+    .topbar-left {
+        gap: 10px;
+        font-size: 12px;
+    }
+
+    .topbar-logo {
+        height: 58px !important;
+        width: 58px !important;
+    }
+
+    .login-wrap {
+        padding: 105px 12px 115px;
+    }
+
+    .login-card {
+        padding: 22px 16px 26px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+    }
+
+        .login-card img {
+            height: 80px !important;
+        }
+
+    .form-group input,
+    .btn-login {
+        height: 44px;
+        font-size: 14px;
+    }
+
+    .hint {
+        font-size: 11px;
+        padding: 12px;
+    }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+    .topbar-left {
+        font-size: 11px;
+        gap: 8px;
+    }
+
+    .topbar-logo {
+        height: 50px !important;
+        width: 50px !important;
+    }
+
+    .login-card {
+        padding: 18px 12px 22px;
+    }
+}
+
+
+
+/* Keep login card above footer/pattern */
+
+.login-wrap {
+    position: relative;
+    z-index: 20;
+}
+
+.login-card {
+    position: relative;
+    z-index: 30;
+}
+
+.login-wrap::before {
+    z-index: 1 !important;
+}
+
+.login-wrap::after {
+    z-index: 1 !important;
+}
+
+body::after {
+    z-index: 0 !important;
+}
+
+/* Page scrolls, card does not stay fixed */
+
+html,
+body {
+    min-height: 100%;
+    overflow-y: auto;
+}
+
+.login-wrap {
+    position: relative !important;
+    z-index: 20;
+    min-height: 100vh;
+    padding: 105px 16px 180px !important;
+    display: flex;
+    align-items: flex-start !important;
+    justify-content: center;
+}
+
+.login-card {
+    position: relative !important;
+    z-index: 30;
+}
+
+/* keep footer and pattern behind the card */
+.login-wrap::before {
+    z-index: 1 !important;
+}
+
+.login-wrap::after {
+    z-index: 1 !important;
+}
+
+body::after {
+    z-index: 0 !important;
+}
+/* Remove fixed footer behavior */
+body::after {
+    display: none !important;
+}
+
+.login-wrap::before {
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    bottom: 78px;
+    height: 95px;
+    background-image: url("/images/psut-pattern.png");
+    background-repeat: repeat-x;
+    background-size: auto 95px;
+    background-position: bottom center;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.login-wrap::after {
+    content: "ABOUT US        CONTACT        PRIVACY POLICY";
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    bottom: 48px;
+    text-align: center;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: pre;
+    z-index: 2;
+}
+
+/* Make the whole page scroll normally */
+html,
+body {
+    min-height: 100%;
+    overflow-y: auto;
+}
+
+.login-wrap {
+    position: relative !important;
+    min-height: 100vh;
+    padding: 105px 16px 220px !important;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start !important;
+    background: #fff;
+}
+
+/* Add real footer blue area inside login-wrap */
+.login-wrap {
+    background: linear-gradient(to bottom, transparent calc(100% - 78px), #4f8499 calc(100% - 78px));
+}
+
+/* Card stays above the pattern/footer */
+.login-card {
+    position: relative !important;
+    z-index: 10;
+}
+
+/* Top bar scrolls normally with the page */
+
+.login-topbar {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    z-index: 10;
+}
+
+body::before {
+    display: none !important;
+}
+
+.login-wrap {
+    padding-top: 30px !important;
+}
+
+
+
+/* ===== SMART SCHEDULER RESPONSIVE FIX ===== */
+
+@media (max-width: 1024px) {
+    #layout {
+        display: block;
+    }
+
+    #sidebar {
+        display: block;
+        width: 100%;
+        min-height: auto;
+    }
+
+    #sidebar-inner {
+        display: flex;
+        overflow-x: auto;
+    }
+
+    .sidebar-item {
+        min-width: 170px;
+        justify-content: center;
+    }
+
+    #main-content {
+        display: block;
+        padding: 22px 14px;
+    }
+
+    .content-area {
+        max-width: 100%;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 900px;
+    }
+}
+
+@media (max-width: 768px) {
+    #header {
+        height: auto;
+    }
+
+    #header-inner {
+        height: auto;
+        padding: 14px;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .main-logo {
+        width: 180px;
+    }
+
+    .header-actions {
+        align-self: center;
+        margin-bottom: 0;
+    }
+
+    .page-title {
+        font-size: 24px;
+        margin-bottom: 22px;
+    }
+
+    .section-title {
+        font-size: 18px;
+    }
+
+    .filters-box,
+    .schedule-box,
+    .fav-card {
+        padding: 14px;
+    }
+
+    .days-grid,
+    .time-row,
+    .break-row,
+    .credit-row,
+    .schedule-actions,
+    .fav-card-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+        .time-row .field,
+        .break-row .field {
+            justify-content: space-between;
+        }
+
+        .time-row input[type="time"],
+        .break-row input[type="number"],
+        .credit-input {
+            width: 100%;
+        }
+
+    .schedule-nav {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+        .schedule-nav .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+    .fav-card-header,
+    .fav-card-title {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .fav-card-actions .btn,
+    .btn-remove-link {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .important-note {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    #main-content {
+        padding: 16px 10px;
+    }
+
+    .main-logo {
+        width: 150px;
+    }
+
+    .sidebar-item {
+        min-width: 145px;
+        font-size: 12px;
+        padding: 0 8px;
+    }
+
+        .sidebar-item svg {
+            width: 20px;
+            height: 20px;
+        }
+
+    .page-title {
+        font-size: 22px;
+    }
+
+    .btn,
+    .btn-large {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dropdown-container,
+    .dropdown-trigger,
+    .inline-select {
+        width: 100%;
+    }
+
+    .dropdown-menu {
+        width: 260px;
+    }
+
+    table {
+        min-width: 850px;
+    }
+}
+
+/* ===== REAL MOBILE RESPONSIVE FIX ===== */
+
+@media (max-width: 900px) {
+    #layout {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+    }
+
+    #sidebar {
+        display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+    }
+
+    #sidebar-inner {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        width: 100% !important;
+    }
+
+    .sidebar-item {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 135px !important;
+        min-height: 58px !important;
+        padding: 8px 12px !important;
+        font-size: 13px !important;
+        justify-content: center !important;
+    }
+
+        .sidebar-item svg {
+            width: 22px !important;
+            height: 22px !important;
+        }
+
+    #main-content {
+        display: block !important;
+        width: 100% !important;
+        padding: 20px 12px !important;
+    }
+
+    .content-area {
+        width: 100% !important;
+        max-width: none !important;
+    }
+
+    .page-title {
+        font-size: 30px !important;
+        margin-bottom: 24px !important;
+    }
+
+    .section-title {
+        font-size: 24px !important;
+    }
+
+    .table-wrapper {
+        width: 100% !important;
+        overflow-x: auto !important;
+    }
+
+    table {
+        min-width: 850px !important;
+    }
 }

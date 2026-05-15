@@ -112,6 +112,7 @@ namespace SmartSchedulingSystem.Services
             );
         }
 
+
         // ── 1. Remaining courses ─────────────────────────────
         // Reads from STUDENT_REMAINING_COURSE (per-student list) minus
         // anything already added to STUDENT_COURSE (selected for scheduling)
@@ -276,6 +277,9 @@ namespace SmartSchedulingSystem.Services
                         if (!secDays.IsSubsetOf(allowedDays)) return false;
                     }
 
+                    //Fully online courses exluded from the time range validation.
+                    if (IsOnlineCourse(s)) return true;
+                    
                     var start = TimeOnly.Parse(s.STime);
                     var end = TimeOnly.Parse(s.FTime);
                     return start >= filterStart && end <= filterEnd;
@@ -681,13 +685,21 @@ namespace SmartSchedulingSystem.Services
 
             return false;
         }
-
+        private static bool IsOnlineCourse(Section s)
+        {
+            return s.Course.IsOnline == "Y";
+        }
         // Validates break constraints over a COMPLETE schedule combination.
         // Called only when all courses have been placed.
         private static bool IsBreakValid(
             List<Section> sections, int minBreak, int maxBreak,
             HashSet<string> allowedDays)
         {
+            //Fully online courses are NOT included in the break gap validation.
+            sections = sections
+            .Where(s => !IsOnlineCourse(s))
+            .ToList();
+
             var allDays = sections
                 .SelectMany(s => s.DayGroupSections
                     .Select(d => d.Day)

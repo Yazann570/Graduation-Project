@@ -425,13 +425,15 @@ function renderSmartScheduler() {
                             </svg>
                           </button>
                           <div class="dropdown-menu ${state.openDropdown === course.id ? 'open' : ''}" id="dm-${course.id}">
-                            ${course.availableInstructors.map(instr => `
-                              <label>
-                                <input type="checkbox" ${selInstr.includes(instr) ? 'checked' : ''}
-                                  onchange="toggleInstructor('${course.id}', '${instr}')" />
-                                ${instr}
-                              </label>
-                            `).join('')}
+                            ${course.availableInstructors.map(instr => {
+                                const safeInstr = JSON.stringify(instr).replace(/"/g, '&quot;');
+                                return `
+                                <label>
+                                  <input type="checkbox" ${selInstr.includes(instr) ? 'checked' : ''}
+                                    onchange="toggleInstructor('${course.id}', ${safeInstr})" />
+                                  ${instr}
+                                </label>`;
+                            }).join('')}
                           </div>
                         </div>
                       `}
@@ -586,7 +588,7 @@ function renderSmartScheduler() {
     </div>
 
     <!-- Debug: Saved Filters -->
-    ${renderSavedFiltersDebug()}
+    <!--${renderSavedFiltersDebug()} -->
 
     <!-- Generated Schedules -->
     ${state.generatedSchedules.length > 0 ? renderGeneratedSchedules() : ''}
@@ -845,12 +847,7 @@ function renderStudentInfo() {
     <div style="border:1px solid #e0e0e0;border-radius:8px;padding:24px;max-width:500px;">
       <table>
         <tbody>
-          <tr><td style="padding:10px 16px;color:#555;width:160px;">Student ID</td>
-              <td style="padding:10px 16px;font-weight:600;">${s.StId}</td></tr>
-          <tr style="background:#f8f9fa;"><td style="padding:10px 16px;color:#555;">Email</td>
-              <td style="padding:10px 16px;">${s.Email}</td></tr>
-          <tr><td style="padding:10px 16px;color:#555;">Phone</td>
-              <td style="padding:10px 16px;">${s.Phone || '—'}</td></tr>
+          
         </tbody>
       </table>
     </div>
