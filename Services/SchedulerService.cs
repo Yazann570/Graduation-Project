@@ -261,12 +261,15 @@ namespace SmartSchedulingSystem.Services
             var candidatesByCourse = allSections
                 .Where(s =>
                 {
+                    if (isGradProj(s)) return true;
                     if (prefs.TryGetValue(s.CId, out var ids) && !ids.Contains(s.IId)) return false;
                     var secDays = s.DayGroupSections.Select(d => d.Day).ToHashSet();
 
                     // Blended sections (IS_ONLINE='B') have physical days AND online days.
                     // For blended: accept if at least one day falls in the student's allowed days.
                     // For all others: all section days must be within allowed days.
+
+
                     bool isBlended = s.Course.IsOnline == "B";
                     if (isBlended)
                     {
@@ -278,7 +281,7 @@ namespace SmartSchedulingSystem.Services
                     }
 
                     //Fully online courses exluded from the time range validation.
-                    if (IsOnlineCourse(s)) return true;
+                    if (IsOnlineCourse(s) || isGradProj(s)) return true;
                     
                     var start = TimeOnly.Parse(s.STime);
                     var end = TimeOnly.Parse(s.FTime);
@@ -655,6 +658,7 @@ namespace SmartSchedulingSystem.Services
     Section candidate, List<Section> chosen,
     HashSet<string> allowedDays)
         {
+            if (isGradProj(candidate)) return false;
             var candEffective = candidate.DayGroupSections
                 .Select(d => d.Day)
                 .Where(d => allowedDays.Contains(d))
@@ -689,6 +693,10 @@ namespace SmartSchedulingSystem.Services
         {
             return s.Course.IsOnline == "Y";
         }
+        private static bool isGradProj(Section s)
+        {
+            return s.CId == "11494" || s.CId == "11493";
+        }
         // Validates break constraints over a COMPLETE schedule combination.
         // Called only when all courses have been placed.
         private static bool IsBreakValid(
@@ -697,7 +705,7 @@ namespace SmartSchedulingSystem.Services
         {
             //Fully online courses are NOT included in the break gap validation.
             sections = sections
-            .Where(s => !IsOnlineCourse(s))
+            .Where(s => !IsOnlineCourse(s) && !isGradProj(s))
             .ToList();
 
             var allDays = sections
