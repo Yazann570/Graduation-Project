@@ -325,7 +325,15 @@ namespace SmartSchedulingSystem.Services
                     maxResults: 100
                 );
             }
-            
+            results = results
+            .GroupBy(r =>
+                string.Join("|",
+                    r.OrderBy(s => s.CId)
+                     .Select(s =>
+                        $"{s.CId}:{s.SectionNo}:{s.STime}:{s.FTime}:{FormatDays(s)}:{s.Instructor.IName}"
+                     )))
+            .Select(g => g.First())
+            .ToList();
             if (results.Count == 0) return new List<ScheduleResultDto>();
 
             // Delete old data in FK-safe order: FAVOURITE → GENERATED_SECTION → GENERATED_SCHEDULE
@@ -346,6 +354,7 @@ namespace SmartSchedulingSystem.Services
 
             // Persist new schedules — fetch each ID from Oracle before insert
             var dtos = new List<ScheduleResultDto>();
+            
             foreach (var combo in results)
             {
 
