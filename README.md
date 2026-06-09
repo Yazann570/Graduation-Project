@@ -302,7 +302,7 @@ dotnet run
 
 ## Project Team
 
-Developed as a Graduation Project for the Bachelor of Software Engineering program.
+Developed as a Graduation Project for the Bachelor of Computer Science program.
 
 ---
 
