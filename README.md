@@ -8,7 +8,7 @@ The system automatically generates conflict-free schedules, applies user-defined
 
 ## Features
 
-### Student Authentication
+### Student Authentication (Authentication done through PSUT portal)
 
 * Secure student login system
 * Session-based authentication
